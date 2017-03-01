@@ -13,7 +13,8 @@ $(BUILD_DIR)/%.o: %.c
 
 $(OS): $(OS_OBJS)
 	nasm -f elf32 loader.asm -o loader.o
-	ld -melf_i386 -n -Tos.lds loader.o $(OS_OBJS) -o $(OS)
+	nasm -f elf32 gdt.asm -o gdt.o
+	ld -melf_i386 -n -Tos.lds loader.o gdt.o $(OS_OBJS) -o $(OS)
 
 
 clean:

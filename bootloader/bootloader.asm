@@ -43,7 +43,7 @@ pm_switch:
 	mov eax, cr0
 	or eax, 1
 	mov cr0, eax
-	xchg bx, bx
+
 	jmp 08h:select_jump
 
 [bits 32]

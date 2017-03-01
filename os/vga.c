@@ -1,5 +1,4 @@
 #include "vga.h"
-#include "types.h"
 #include "sys.h"
 
 #define HEIGHT 25
@@ -10,7 +9,10 @@ static int cursor;
 static u16int* vga_mem;
 static u16int attribute;
 
+static char hex_chars[16] = {"0123456789abcdef"};
+
 void init_vga() {
+
     vga_mem = (u16int*) 0xB8000;
     cursor = 0;
 	set_color(15, 0);
@@ -18,6 +20,7 @@ void init_vga() {
 }
 
 void vga_scroll() {
+
 	int i;
 
 	for (i = 0; i < WIDTH * (HEIGHT - 1); ++i)
@@ -27,11 +30,10 @@ void vga_scroll() {
 		vga_mem[WIDTH * (HEIGHT - 1) + i] = attribute;
 
 	cursor = WIDTH * (HEIGHT - 1);
-
 }
 
 void vga_write(const char* str) {
-	
+
 	int i = 0;
 
 	while (str[i]) {
@@ -53,6 +55,7 @@ void vga_write(const char* str) {
 }
 
 void vga_clear() {
+
 	int i;
 	for (i = 0; i < (WIDTH * HEIGHT); i++) {
 		vga_mem[i] = (u16int) (attribute | ' ');
@@ -61,17 +64,26 @@ void vga_clear() {
 	update_csr();
 }
 
-void update_csr()
-{
+void update_csr() {
+
     outport(0x3D4, 14);
     outport(0x3D5, cursor >> 8);
     outport(0x3D4, 15);
     outport(0x3D5, cursor);
 }
 
-void set_color(u8int fore, u8int back)
-{
+void set_color(u8int fore, u8int back) {
     /* Top 4 bytes are the background, bottom 4 bytes
     *  are the foreground color */
     attribute = ((back << 4) | (fore & 0x0F)) << 8;
+}
+
+void print_hex(u8int hex) {
+	char upper = hex_chars[(hex >> 4)];
+	char lower = hex_chars[(hex & 0x0F)];
+	//vga_write(&upper);
+	//vga_write(&lower);
+
+	char hex_str[3] = {upper, lower};
+	vga_write(&hex_str);
 }
