@@ -16,7 +16,7 @@ boot:
 
 	mov ax, 0
 	mov es, ax		
-	mov bx, 0x400 	; set bx to where we load the kernel
+	mov bx, 0x0000 	; set bx to where we load the kernel
 
 	mov al, 0x12	; set lower byte of ax to read 18 sectors
 	mov ch, 0 		; set higher byte of cx to read track 0 (first track)
@@ -57,7 +57,7 @@ select_jump:
 	mov esp, 0x9000
 
 	; do a far jump to set cs and go to kernel code
-	jmp 08h:0x500
+	jmp 08h:0x1000
 
 
 

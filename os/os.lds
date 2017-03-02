@@ -1,20 +1,29 @@
-ENTRY(load_kern);
-
-PHDRS 
-{
-	code PT_LOAD;
-}
+/* The bootloader will look at this image and start execution at the symbol
+   designated as the entry point. */
+ENTRY(load_kern)
 
 SECTIONS
 {
-	.text 0x500: ALIGN(0x100) { *(.text) } :code
-	
-	.rodata : {
-        *(.rodata)
-    }
 
-    .data : {
-        *(.data)
-    }
-	.bss : { *(.bss) }
+	. = 0x1000;
+
+	.text BLOCK(4K) : ALIGN(4K)
+	{
+		*(.text)
+	}
+
+	.rodata BLOCK(4K) : ALIGN(4K)
+	{
+		*(.rodata)
+	}
+
+	.data BLOCK(4K) : ALIGN(4K)
+	{
+		*(.data)
+	}
+
+	.bss BLOCK(4K) : ALIGN(4K)
+	{
+		*(.bss)
+	}
 }
