@@ -14,21 +14,32 @@ boot:
 	cli ; clear interrupts
 	cld ; clear direction flag
 
-	mov ax, 0
-	mov es, ax		
-	mov bx, 0x0000 	; set bx to where we load the kernel
+	xor ah, ah
+	int 0x13
+	
+	mov bx, 0x1000	; set bx to where we load the kernel
 
-	mov al, 0x12	; set lower byte of ax to read 18 sectors
+	mov al, 17		; set lower byte of ax to read 17 sectors
 	mov ch, 0 		; set higher byte of cx to read track 0 (first track)
 	mov cl, 2		; set lower byte of cx to read sector 2 (bootloader is sec1)
 	mov dh, 0 		; set higher byte of dx to read head 0 (top side of disk)
 	mov dl, 0 		; set lower byte of dx to read drive 0 (floppy drive)
 
-	mov ah, 0x02	; read 
+	mov ah, 0x02	; read
 
 	int 0x13		; call BIOS interrupt 13 to read drive
-	;int 0x10
-	;jmp 0x0000:0x1100	; jump to the intstructions read from drive
+
+	mov bx, 3200
+	mov al, 17		; set lower byte of ax to read 17 sectors
+	mov ch, 1 		; set higher byte of cx to read track 1 (second track)
+	mov cl, 1		; set lower byte of cx to read sector 1 
+	mov dh, 0 		; set higher byte of dx to read head 0 (top side of disk)
+	mov dl, 0 		; set lower byte of dx to read drive 0 (floppy drive)
+
+	mov ah, 0x02	; read
+
+
+	xchg bx, bx
 	jmp pm_switch
 
 	hlt				; this instruction should not execute
@@ -53,11 +64,12 @@ select_jump:
 	mov	ax, 0x10		; set data segments to data selector (0x10)
 	mov	ds, ax
 	mov	ss, ax
-	;mov es, ax
+	mov es, ax
 	mov esp, 0x9000
 
+	xchg bx, bx 
 	; do a far jump to set cs and go to kernel code
-	jmp 08h:0x1000
+	jmp 08h:0x2000
 
 
 

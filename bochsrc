@@ -1,0 +1,3 @@
+floppya: 1_44=build/disk.img, status=inserted
+boot: floppy
+magic_break: enabled=1

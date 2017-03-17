@@ -1,23 +1,32 @@
 #include "vga.h"
 #include "gdt.h"
+#include "idt.h"
 #include "sys.h"
 
-void main() {
-
-	init_gdt();
+void kmain() {
+	
+	
 	init_vga();
+	init_gdt();
+	
 
 	set_color(0x2, 0);
 	vga_write("kernel loaded!\n");
 	set_color(0xb, 0);
-	vga_write("gdt installed!");
+	vga_write("GDT installed!\n");
 
-	//print_hex(0x9a);
+	//print_dec(1234);
 
+	init_idt();
+	vga_write("IDT installed!\n");
 	bochs_break();
+
+	asm volatile ("int $0x3");
+
 	
-	for(;;){}
-	asm("hlt");
+	for(;;){
+		asm volatile ("hlt");
+	}
 }
 
 

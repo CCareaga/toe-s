@@ -1,9 +1,9 @@
 global load_kern
-extern main
+extern kmain
 
 [bits 32]
 
 load_kern: 
 	cli	
-	call main
+	call kmain
 	hlt

@@ -14,3 +14,10 @@ gdt_install:
 
 .return:
    ret
+
+global idt_install
+
+idt_install:
+   mov eax, [esp+4]  ; get the passed parameter from our c file. 
+   lidt [eax]        ; load it up
+   ret               ; get out! 

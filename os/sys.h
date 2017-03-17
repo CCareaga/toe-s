@@ -1,17 +1,16 @@
 #ifndef __SYSTEM_H
 #define __SYSTEM_H
 
-typedef unsigned int   u32int;
-typedef          int   s32int;
-typedef unsigned short u16int;
-typedef          short s16int;
-typedef unsigned char  u8int;
-typedef          char  s8int;
+#include <stdint.h>
+#include <stddef.h>
 
-extern u8int inport(u16int _port);
-extern void outport(u16int _port, u8int _data);
+extern uint8_t inport(uint16_t _port);
+extern void outport(uint16_t _port, uint8_t _data);
 extern void bochs_break();
 
-char convert_hex(u8int);
+void* memset(void* bufptr, uint8_t value, uint32_t size);
+char* itoa(uint32_t value, uint32_t base);
+
+char convert_hex(uint8_t);
 
 #endif

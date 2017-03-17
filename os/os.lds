@@ -5,7 +5,7 @@ ENTRY(load_kern)
 SECTIONS
 {
 
-	. = 0x1000;
+	. = 0x2000;
 
 	.text BLOCK(4K) : ALIGN(4K)
 	{
