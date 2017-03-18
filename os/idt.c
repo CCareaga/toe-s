@@ -20,8 +20,6 @@ void init_idt()
     // 0x08 is the kernel code selector in our GDT and 0x8E represents
     // a 32-bit interrupt gate with 0-ring priv.
 
-    vga_write("ugh");
-
     add_entry(0, (uint32_t)isr0, 0x08, 0x8E);
     add_entry(1, (uint32_t)isr1, 0x08, 0x8E);
     add_entry(2, (uint32_t)isr2, 0x08, 0x8E);

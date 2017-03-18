@@ -22,6 +22,7 @@ void kmain() {
 	bochs_break();
 
 	asm volatile ("int $0x3");
+	asm volatile ("int $0x4");
 
 	
 	for(;;){

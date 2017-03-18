@@ -1,7 +1,7 @@
 ; instead of writing 32 seperate int handlers we write a genereic macro
 ; one for interrupts with error codes and one with interrupts without
 ; this allows us to define these routines programatically!
-
+[bits 32]
 extern isr_handler
 
 %macro ISR_NOERR 1  
@@ -66,6 +66,8 @@ isr_common:
    mov es, ax
    mov fs, ax
    mov gs, ax
+
+   cld
 
    call isr_handler
 
