@@ -1,4 +1,5 @@
 #include "idt.h"
+#include "sys.h"
 
 extern void idt_install(uint32_t);
 
@@ -6,6 +7,7 @@ static void add_entry(uint8_t, uint32_t, uint16_t, uint8_t);
 
 // create an array of 256 idt entries, (many will be zero!)
 idt_entry entries[256];
+
 // create idt pointer struct to tell cpu where it is and its size
 idt_ptr   idt_p;
 
@@ -15,7 +17,40 @@ void init_idt()
    	idt_p.base  = (uint32_t) &entries;		 // pointer to the start of entry array
 
     memset(&entries, 0, sizeof(idt_entry)*256); // set all entries to 0
-    //print_hex(idt_p.limit);
+
+    // when bios starts master PIC irq's are mapped 0x8-0xf this interferes
+    // with the interrupts used by the CPU for exceptions and faults
+    // irq 0-7 is mapped to 0x8-0xf and irq 8-15 is mapped to int 0x70 - 0x77
+    // we remap these irq's to trigger interrupt 32-47
+
+    // 0x20 is the I/O base address for master PIC
+    // 0xA0 is the I/O base for the slave PIC
+
+    // to access the data in we use 0x21 and 0xA1
+ 
+    // starts the initialization sequence (in cascade mode)
+    outport(0x20, 0x11);
+    outport(0xA0, 0x11);
+    
+    // set offset of the master PIC to 0x20 (decimal 32)
+    outport(0x21, 0x20);
+
+    // set offset of the slave PIC to 0x28 (decimal 40)
+    outport(0xA1, 0x28);
+
+    // tell  master PIC that there is a slave PIC at IRQ2 (0000 0100)
+    outport(0x21, 0x04);
+
+    // tell slave its cascade identity (0000 0010)
+    outport(0xA1, 0x02);
+
+    // 8086/88 (MCS-80/85) mode 
+    outport(0x21, 0x01);
+    outport(0xA1, 0x01);
+
+    outport(0x21, 0x0);
+    outport(0xA1, 0x0);
+
     // this sucks but for obvious reasons a for loop cannot be used :-(
     // 0x08 is the kernel code selector in our GDT and 0x8E represents
     // a 32-bit interrupt gate with 0-ring priv.
@@ -53,14 +88,32 @@ void init_idt()
    	add_entry(30, (uint32_t)isr30, 0x08, 0x8E);
    	add_entry(31, (uint32_t)isr31, 0x08, 0x8E);
 
+    // add entries for our IRQ's!
+    add_entry(32, (uint32_t)irq0, 0x08, 0x8E);
+    add_entry(33, (uint32_t)irq1, 0x08, 0x8E);
+    add_entry(34, (uint32_t)irq2, 0x08, 0x8E);
+    add_entry(35, (uint32_t)irq3, 0x08, 0x8E);
+    add_entry(36, (uint32_t)irq4, 0x08, 0x8E);
+    add_entry(37, (uint32_t)irq5, 0x08, 0x8E);
+    add_entry(38, (uint32_t)irq6, 0x08, 0x8E);
+    add_entry(39, (uint32_t)irq7, 0x08, 0x8E);
+    add_entry(40, (uint32_t)irq8, 0x08, 0x8E);
+    add_entry(41, (uint32_t)irq9, 0x08, 0x8E);
+    add_entry(42, (uint32_t)irq10, 0x08, 0x8E);
+    add_entry(43, (uint32_t)irq11, 0x08, 0x8E);
+    add_entry(44, (uint32_t)irq12, 0x08, 0x8E);
+    add_entry(45, (uint32_t)irq13, 0x08, 0x8E);
+    add_entry(46, (uint32_t)irq14, 0x08, 0x8E);
+    add_entry(47, (uint32_t)irq15, 0x08, 0x8E);
+
    	// send the pointer of our idt descriptor struct to loading routine (dt.asm)
-    //mem_print(&idt_p, 32);
+
     idt_install( (uint32_t) &idt_p);
 }
 
 static void add_entry(uint8_t vec, uint32_t add, uint16_t sel, uint8_t flags) {
-	  entries[vec].low 	  = add & 0xFFFF; // grab the low 16 bits
-   	entries[vec].high   = (add >> 16) & 0xFFFF; // bit shift to the right 16 bits and grab the low 16 bits
+	entries[vec].low 	= add & 0xFFFF; // grab the low 16 bits
+    entries[vec].high   = (add >> 16) & 0xFFFF; // bit shift to the right 16 bits and grab the low 16 bits
     entries[vec].sel    = sel;
    	entries[vec].zero 	= 0;
    	entries[vec].flags  = flags;
