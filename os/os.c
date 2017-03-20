@@ -2,6 +2,7 @@
 #include "gdt.h"
 #include "idt.h"
 #include "timer.h"
+#include "keyboard.h"
 #include "sys.h"
 
 void kmain() {
@@ -19,7 +20,8 @@ void kmain() {
 	vga_write("IDT installed!\n");
 
 	set_color(0xd, 0);
-	init_timer(1);
+	//init_timer(1);
+	init_keyboard();
 
 	for(;;){
 		//asm volatile ("hlt");
