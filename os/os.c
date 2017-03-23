@@ -17,6 +17,7 @@ void kmain() {
 	vga_write("GDT installed!\n");
 
 	init_idt();
+	set_color(0x4, 0);
 	vga_write("IDT installed!\n");
 
 	set_color(0xd, 0);

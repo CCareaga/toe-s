@@ -19,7 +19,7 @@ boot:
 	
 	mov bx, 0x1000	; set bx to where we load the kernel
 
-	mov al, 17		; set lower byte of ax to read 17 sectors
+	mov al, 25		; set lower byte of ax to read 17 sectors
 	mov ch, 0 		; set higher byte of cx to read track 0 (first track)
 	mov cl, 2		; set lower byte of cx to read sector 2 (bootloader is sec1)
 	mov dh, 0 		; set higher byte of dx to read head 0 (top side of disk)
@@ -29,15 +29,22 @@ boot:
 
 	int 0x13		; call BIOS interrupt 13 to read drive
 
-	mov bx, 3200
-	mov al, 17		; set lower byte of ax to read 17 sectors
-	mov ch, 1 		; set higher byte of cx to read track 1 (second track)
-	mov cl, 1		; set lower byte of cx to read sector 1 
-	mov dh, 0 		; set higher byte of dx to read head 0 (top side of disk)
-	mov dl, 0 		; set lower byte of dx to read drive 0 (floppy drive)
+	; NOTE: these lines that are commented out may have to be used 
+	; they are to read 18 more sectors from the floppy drive
+	; some bioses cant read more than 18 each time but QEMU
+	; seems to do just fine when I load a value greater than 18 into al
+	; Bochs seems to have odd issues with certain values...
+	
+	;mov bx, 0x3200
+	;mov al, 18		; set lower byte of ax to read 17 sectors
+	;mov ch, 1 		; set higher byte of cx to read track 1 (second track)
+	;mov cl, 0		; set lower byte of cx to read sector 1 
+	;mov dh, 0 		; set higher byte of dx to read head 0 (top side of disk)
+	;mov dl, 0 		; set lower byte of dx to read drive 0 (floppy drive)
 
-	mov ah, 0x02	; read
+	;mov ah, 0x02	; read
 
+	;int 0x13		; call BIOS interrupt 13 to read drive
 
 	xchg bx, bx
 	jmp pm_switch
@@ -70,8 +77,6 @@ select_jump:
 	xchg bx, bx 
 	; do a far jump to set cs and go to kernel code
 	jmp 08h:0x2000
-
-
 
 gdt: ; Address for the GDT
 gdt_null: ; Null Segment 

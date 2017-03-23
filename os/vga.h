@@ -7,7 +7,6 @@
 void init_vga();
 void vga_scroll();
 void vga_write(const char* str);
-void vga_putch(const char c);
 void vga_clear();
 
 void update_csr();

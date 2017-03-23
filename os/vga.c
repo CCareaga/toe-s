@@ -4,6 +4,7 @@
 #define HEIGHT 25
 #define WIDTH 80
 #define BUFFER_LEN 2000
+#define WHITE 
 
 static int cursor;
 static uint16_t* vga_mem;
@@ -56,12 +57,6 @@ void vga_write(const char* str) {
 		i++;
 	}
 }
-
-void vga_putch(const char c) {
-	vga_mem[cursor] = (uint16_t) (c | attribute);
-	cursor++;
-	update_csr();
-} 
 
 void vga_clear() {
 

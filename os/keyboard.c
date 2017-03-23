@@ -44,16 +44,57 @@ void keyboard_handler(registers *regs) {
     /* Read from the keyboard's data buffer */
     scancode = inport(0x60);
 
-    /* If the top bit of the byte we read from the keyboard is
-    *  set, that means that a key has just been released */
-    if (scancode & 0x80) {
-        //see if the user released the shift, alt, or control keys... 
+    switch (scancode) {
+        case 170:
+        case 42:
+            modifiers.shift = !(modifiers.shift);
+            break;
+
+        case 184:
+        case 56:
+            modifiers.alt = !(modifiers.alt);
+            break;
+
+        case 157:
+        case 29:
+            modifiers.ctrl = !(modifiers.ctrl);
+            break;
+
+        case 58: // caps
+            modifiers.capslock = !(modifiers.capslock);
+            break;
+
+        case 70: // scroll
+            modifiers.scrolllock = !(modifiers.scrolllock);
+            break;
+
+        case 69: // num
+            modifiers.numlock = !(modifiers.numlock);
+            break;
+
+        default:
+            break;
     }
-    else {
-        // my vga_write function takes a const char* so this is how I do 
-        // it... not sure if this is the way but it works
-        const char key[] = {kbdus[scancode]};
-        vga_write(&key);
+
+
+    // my vga_write function takes a const char* so this is how I do 
+    // it... not sure if this is the way but it works
+    if (!(scancode & 0x80)) {
+        if (kbdus[scancode]) {
+            const char key[] = {kbdus[scancode]};
+            
+            if (modifiers.shift) {
+                vga_write("shift");
+            }
+            if (modifiers.alt) {
+                vga_write("alt");
+            }
+            if (modifiers.ctrl) {
+                vga_write("ctrl");
+            }
+            vga_write(&key);
+        }
+
     }
 }
 
