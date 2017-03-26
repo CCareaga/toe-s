@@ -1,5 +1,5 @@
-#include "sys.h"
-#include "vga.h"
+#include "include/sys.h"
+#include "include/vga.h"
 
 inline uint8_t inport(uint16_t _port) {
     

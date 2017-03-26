@@ -1,6 +1,6 @@
-#include "timer.h"
-#include "isr.h"
-#include "vga.h"
+#include "include/timer.h"
+#include "include/isr.h"
+#include "include/vga.h"
 
 uint32_t tick = 0; // save the current clock tick
 

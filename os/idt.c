@@ -1,5 +1,5 @@
-#include "idt.h"
-#include "sys.h"
+#include "include/idt.h"
+#include "include/sys.h"
 
 extern void idt_install(uint32_t);
 

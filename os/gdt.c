@@ -1,6 +1,4 @@
-#include "sys.h"
-#include "gdt.h"
-#include "vga.h"
+#include "include/gdt.h"
 
 gdt_e segments[5];
 gdt_p gdt_ptr;
@@ -35,10 +33,8 @@ static void create_segment(int32_t index, uint32_t base, uint32_t lim, uint8_t a
 	segments[index].b_low    = (base & 0xFFFF);
    	segments[index].b_middle = (base >> 16) & 0xFF;
    	segments[index].b_high   = (base >> 24) & 0xFF;
-
    	segments[index].l_low   = (lim & 0xFFFF);
-   	segments[index].gran = (lim >> 16) & 0x0F;
-
-   	segments[index].gran |= gran & 0xF0;
+   	segments[index].gran 	= (lim >> 16) & 0x0F;
+   	segments[index].gran 	|= gran & 0xF0;
    	segments[index].acc      = acc;
 }

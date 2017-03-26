@@ -2,10 +2,13 @@
    designated as the entry point. */
 ENTRY(load_kern)
 
+phys = 0x00100000;
+
 SECTIONS
 {
 
-	. = 0x2000;
+	. = 0x1M;
+	start = .; _start = .; __start = .;
 
 	.text BLOCK(4K) : ALIGN(4K)
 	{
@@ -26,4 +29,8 @@ SECTIONS
 	{
 		*(.bss)
 	}
+
+	. = ALIGN(4K);
+
+    end = .; _end = .; __end = .;
 }

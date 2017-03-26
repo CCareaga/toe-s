@@ -1,6 +1,6 @@
-#include "isr.h"
-#include "vga.h"
-#include "sys.h"
+#include "include/isr.h"
+#include "include/vga.h"
+#include "include/sys.h"
 
 isr_t handlers[256];
 

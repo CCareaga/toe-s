@@ -17,7 +17,7 @@ boot:
 	xor ah, ah
 	int 0x13
 	
-	mov bx, 0x1000	; set bx to where we load the kernel
+	mov bx, 0x100000 - 0x1000	; set bx to where we load the kernel
 
 	mov al, 25		; set lower byte of ax to read 17 sectors
 	mov ch, 0 		; set higher byte of cx to read track 0 (first track)
@@ -34,7 +34,7 @@ boot:
 	; some bioses cant read more than 18 each time but QEMU
 	; seems to do just fine when I load a value greater than 18 into al
 	; Bochs seems to have odd issues with certain values...
-	
+
 	;mov bx, 0x3200
 	;mov al, 18		; set lower byte of ax to read 17 sectors
 	;mov ch, 1 		; set higher byte of cx to read track 1 (second track)
@@ -76,7 +76,7 @@ select_jump:
 
 	xchg bx, bx 
 	; do a far jump to set cs and go to kernel code
-	jmp 08h:0x2000
+	jmp 08h:0x100000
 
 gdt: ; Address for the GDT
 gdt_null: ; Null Segment 

@@ -1,11 +1,11 @@
-#include "vga.h"
-#include "gdt.h"
-#include "idt.h"
-#include "timer.h"
-#include "keyboard.h"
-#include "sys.h"
+#include "include/vga.h"
+#include "include/gdt.h"
+#include "include/idt.h"
+#include "include/timer.h"
+#include "include/keyboard.h"
+#include "include/sys.h"
 
-void kmain() {
+int kmain(struct multiboot *mboot) {
 	
 	init_vga();
 	init_gdt();
@@ -23,6 +23,7 @@ void kmain() {
 	set_color(0xd, 0);
 	//init_timer(1);
 	init_keyboard();
+	vga_write(&mboot);
 
 	for(;;){
 		//asm volatile ("hlt");

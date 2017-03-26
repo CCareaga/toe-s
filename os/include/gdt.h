@@ -2,6 +2,8 @@
 #define GDT_H
 
 #include <stdint.h>
+#include "vga.h"
+#include "sys.h"
 
 struct gdt_entry
 {
