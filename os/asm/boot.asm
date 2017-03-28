@@ -11,10 +11,12 @@ MBOOT_CHECKSUM      equ -(MBOOT_HEADER_MAGIC + MBOOT_HEADER_FLAGS)
 [bits 32]
 
 global mboot                ; Make 'mboot' accessible from C.
+
 extern code                 ; Start of the '.text' section.
 extern bss                  ; Start of the .bss section.
 extern end                  ; End of the last loadable section.
 
+section ._multiboot_header
 align 4
 
 mboot:
@@ -27,21 +29,25 @@ mboot:
     dd  code                      ; Start of kernel '.text' (code) section.
     dd  bss                       ; End of kernel '.data' section.
     dd  end                       ; End of kernel.
-    dd  start                     ; Kernel entry point (initial EIP).
+    dd  boot_entry                ; Kernel entry point (initial EIP).
 
-global start
+section .text
+global boot_entry
 
-start: 
+boot_entry: 
 	mov esp, stack
 	jmp kern_jump
 
 kern_jump:
+    cli
+    push ebx
 	extern kmain
 	call kmain
 	jmp $
 
 
 SECTION .bss
+align 16
     resb 8192               ; This reserves 8KBytes of memory here
 stack:
 

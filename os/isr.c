@@ -14,7 +14,8 @@ void add_handler(uint8_t n, isr_t handler)
 void isr_handler(registers *regs) {
 	set_color(0x4, 0);
    	vga_write("recieved interrupt: ");
-   	vga_write(itoa(regs->int_no, 10));
+   	vga_write(itoa(regs->int_no, 16));
+   	vga_write(itoa(regs->err_code, 16));
    	vga_write("\n");
 }
 

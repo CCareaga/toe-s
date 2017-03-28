@@ -4,8 +4,13 @@
 #include "include/timer.h"
 #include "include/keyboard.h"
 #include "include/sys.h"
+#include "include/multiboot.h"
+#include "include/pmm.h"
 
-int kmain(struct multiboot *mboot) {
+extern uint32_t end;
+extern uint32_t start;
+
+int kmain(multiboot_info_t *mbi) {
 	
 	init_vga();
 	init_gdt();
@@ -23,7 +28,9 @@ int kmain(struct multiboot *mboot) {
 	set_color(0xd, 0);
 	//init_timer(1);
 	init_keyboard();
-	vga_write(&mboot);
+
+	
+	init_pmm(mbi, (uint32_t) &end);
 
 	for(;;){
 		//asm volatile ("hlt");
