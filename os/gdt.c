@@ -20,7 +20,8 @@ void init_gdt() {
 
 	create_segment(0, 0, 0, 0, 0); //null entry
 
-	for (int i = 0; i < 4; i++) {
+    int i;
+	for (i = 0; i < 4; i++) {
 		create_segment(i+1, 0, 0xFFFFFFFF, acc_bytes[i], 0xCF);
 	}
 

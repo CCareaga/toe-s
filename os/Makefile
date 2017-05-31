@@ -2,7 +2,7 @@ BUILD_DIR=../build/os
 OS=$(BUILD_DIR)/kernel.elf
 ASM=asm
 
-CFLAGS+=-ffreestanding -O2 -Wall -Wextra -nostdlib -m32
+CFLAGS+=-ffreestanding -O2 -Wall -Wextra -m32
 
 OS_SRCS := $(wildcard *.c)
 OS_OBJS := $(patsubst %.c, $(BUILD_DIR)/%.o, $(OS_SRCS))

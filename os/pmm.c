@@ -15,7 +15,7 @@ void init_pmm(multiboot_info_t *mbi, uint32_t kern_end) {
 		multiboot_memory_map_t *mmap = (multiboot_memory_map_t *) mbi->mmap_addr;
 		
 		uint32_t alloc_start, alloc_end;
-
+      
 		while(mmap < (maddr + mlen)) {
 			mmap = (multiboot_memory_map_t *) ((uint32_t) mmap + mmap->size + sizeof(uint32_t));
 			alloc_start = mmap->addr;

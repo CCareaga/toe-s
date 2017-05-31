@@ -20,7 +20,8 @@ void bochs_break() {
 
 void* memset(void* bufptr, uint8_t value, uint32_t size) {
 	unsigned char* buf = (unsigned char*) bufptr;
-	for (size_t i = 0; i < size; i++)
+    size_t i;
+	for (i = 0; i < size; i++)
 		buf[i] = (unsigned char) value;
 	return bufptr;
 }
