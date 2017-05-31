@@ -5,8 +5,7 @@
 #include "vga.h"
 #include "isr.h"
 
-typedef struct key_struct
-{
+typedef struct key_struct {
 	uint8_t capslock : 1;
 	uint8_t numlock : 1;
 	uint8_t scrolllock : 1;

@@ -3,6 +3,8 @@
 uint32_t *frame_stack;
 uint32_t top = 0x0;
 
+page_directory_t *page_dir;
+
 // right here we provide a pointer to the multiboot info, this
 // contains a memory map that will tell us which addresses we push to the 
 // frame stack and which ones we shouldn't. We also need the location of the kernel
@@ -41,16 +43,16 @@ void init_pmm(multiboot_info_t *mbi, uint32_t kern_end) {
 	        	vga_write("\n");
 
 	        	uint32_t curr = alloc_start;
-	        	while(curr < (alloc_end - 0x1000)) {
-	        		if (curr < kern_end) continue; // dont overwrite kernel!!!
 
-	        		push_frame(curr);
+	        	while(curr < (alloc_end - 0x1000)) {
+	        		if (curr > kern_end) {  // dont overwrite kernel!!!
+	        		    push_frame(curr);
+                    }
 	        		curr += 0x1000;
 	        	}
 
 	        }
 		}
-
 	}
 }
 
@@ -58,9 +60,6 @@ void init_pmm(multiboot_info_t *mbi, uint32_t kern_end) {
 // of our newest frame. Then sets the new address to our current top
 
 void push_frame(uint32_t addr) {
-	vga_write("PUSHING: ");
-	vga_write(itoa(addr, 16));
-	vga_write("\n");
 	uint32_t *page_start = (uint32_t *) addr; 	// create pointer to page start
 	
 	*page_start = top; 	// assign our old top to it
@@ -80,3 +79,40 @@ uint32_t pop_frame() {
 	top = *(uint32_t *) top; 	// top is now the value that was at address top (next frame)
 	return ret; 		// return the value we saved
 }
+
+void allocate_frame(page_t *page, uint32_t kern, uint32_t writeable) {
+
+    if (page->frame) {
+        return; // this page already has a frame!
+    }
+
+    uint32_t addr = pop_frame(); // get a new frame from top of stack
+
+    page->present = 1;              // set the present bit of the page
+    page->rw = (writeable) ? 1:0;   // is this a writeable page
+    page->user = (kern) ? 0:1;      // is this a user page?
+    page->frame = addr >> 12;        // frame address is multiple of 0x1000 so shift 3 bytes
+}
+
+void free_frame(page_t *page) {
+    uint32_t addr = page->frame << 12;
+
+    if (!addr) {
+        return; // this page had no frame allocated...
+    }
+
+    push_frame(addr);
+    page->frame = 0x0;
+}
+
+void init_paging() {
+    vga_write(itoa(sizeof(page_directory_t)));
+    vga_write("t");
+}
+
+
+
+void load_page_dir(page_directory_t *dir) {
+    return;
+}
+

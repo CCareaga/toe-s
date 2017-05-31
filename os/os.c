@@ -31,7 +31,7 @@ int kmain(multiboot_info_t *mbi) {
 
 	
 	init_pmm(mbi, (uint32_t) &end);
-
+    init_paging();
 	for(;;){
 		//asm volatile ("hlt");
 	}
