@@ -2,6 +2,8 @@
 #define PMM_H
 
 #include "multiboot.h"
+#include "sys.h"
+#include "isr.h"
 #include <stdint.h>
 
 typedef struct page { 
@@ -29,12 +31,11 @@ void push_frame(uint32_t addr);
 uint32_t pop_frame();
 
 
-void allocate_frame(page_t *page, uint32_t kern, uint32_t writeable);
+void allocate_page(page_t *page, uint32_t kern, uint32_t writeable);
 
-void free_frame(page_t *page);
+void free_page(page_t *page);
 
 void init_paging();
 
-void load_page_dir(page_directory_t *dir);
-
+void page_fault(registers *regs);
 #endif

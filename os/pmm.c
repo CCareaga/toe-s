@@ -1,5 +1,8 @@
 #include "include/pmm.h"
 
+extern void load_page_directory(uint32_t page_directory);
+extern void enable_paging();
+
 uint32_t *frame_stack;
 uint32_t top = 0x0;
 
@@ -80,7 +83,7 @@ uint32_t pop_frame() {
 	return ret; 		// return the value we saved
 }
 
-void allocate_frame(page_t *page, uint32_t kern, uint32_t writeable) {
+void allocate_page(page_t *page, uint32_t kern, uint32_t writeable) {
 
     if (page->frame) {
         return; // this page already has a frame!
@@ -94,7 +97,7 @@ void allocate_frame(page_t *page, uint32_t kern, uint32_t writeable) {
     page->frame = addr >> 12;        // frame address is multiple of 0x1000 so shift 3 bytes
 }
 
-void free_frame(page_t *page) {
+void free_page(page_t *page) {
     uint32_t addr = page->frame << 12;
 
     if (!addr) {
@@ -106,13 +109,49 @@ void free_frame(page_t *page) {
 }
 
 void init_paging() {
-    vga_write(itoa(sizeof(page_directory_t)));
-    vga_write("t");
+    size_t i, j;
+    uint32_t addr = 0x0;
+    
+    page_table_t *page_tab;
+
+    page_dir = (page_directory_t*) pop_frame();
+    memset(page_dir, 0, 0x1000);
+
+    for (i = 0; i < 1024; i++) {
+        page_tab = (page_table_t*) pop_frame();
+        memset(page_tab, 0, 0x1000);
+
+        for (j = 0; j < 1024; j++) { // fill page table
+            page_tab->pages[j].frame = addr >> 12;
+            page_tab->pages[j].present = 1;
+            page_tab->pages[j].rw = 1;
+            page_tab->pages[j].user = 0;
+            addr += 0x1000;
+            // allocate_page((page_t*) &page_tab->pages[j], 1, 1); // kernel level, writeable 
+        }
+        page_dir->tables[i] = (uint32_t) page_tab | 3;
+    }
+
+    load_page_directory((uint32_t) page_dir);    
+    enable_paging();
 }
 
+void page_fault(registers *regs) {
+    uint32_t faulting_address;
+    asm volatile("mov %%cr2, %0" : "=r" (faulting_address));
 
+    int present   = !(regs->err_code & 0x1); 
+    int rw = regs->err_code & 0x2;
+    int us = regs->err_code & 0x4; 
+    int reserved = regs->err_code & 0x8;
+    int id = regs->err_code & 0x10;
 
-void load_page_dir(page_directory_t *dir) {
-    return;
+    vga_write("Page fault! ( ");
+    if (present) vga_write("present ");
+    if (rw) vga_write("read-only ");
+    if (us) vga_write("user-mode ");
+    if (reserved) vga_write("reserved ");
+    vga_write(") at 0x");
+    vga_write(itoa(faulting_address, 16));
+    vga_write("\n");
 }
-
