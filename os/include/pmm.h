@@ -35,7 +35,7 @@ void allocate_page(page_t *page, uint32_t kern, uint32_t writeable);
 
 void free_page(page_t *page);
 
-void init_paging();
+void init_paging(uint32_t end);
 
 void page_fault(registers *regs);
 #endif

@@ -31,12 +31,16 @@ int kmain(multiboot_info_t *mbi) {
 
 	
 	init_pmm(mbi, (uint32_t) &end);
-    init_paging();
-    
-	set_color(0x8, 0);
-	vga_write("Paging enabled!\n");
+    init_paging(&end);    
 
-	for(;;){
+	set_color(0x8, 0);
+    
+    uint32_t *ptr = (uint32_t*) 0xa0000000;
+    uint32_t do_page_fault = *ptr;
+	
+    vga_write("Paging enabled!\n");
+
+    for(;;){
 		//asm volatile ("hlt");
 	}
 }
