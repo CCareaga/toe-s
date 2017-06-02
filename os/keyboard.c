@@ -100,5 +100,5 @@ void keyboard_handler(registers *regs) {
 
 // add our handler to our IRQ array, keystroke triggers IRQ 1
 void init_keyboard() {
-    add_handler(1, &keyboard_handler);
+    add_handler(33, &keyboard_handler);
 }

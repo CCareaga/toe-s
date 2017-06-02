@@ -2,7 +2,7 @@ BUILD_DIR=../build/os
 OS=$(BUILD_DIR)/kernel.elf
 ASM=asm
 
-CFLAGS+=-ffreestanding -O2 -Wall -Wextra -m32 -nostdlib
+CFLAGS+=-g -ffreestanding -O -Wall -Wextra -m32 -nostdlib
 
 OS_SRCS := $(wildcard *.c)
 OS_OBJS := $(patsubst %.c, $(BUILD_DIR)/%.o, $(OS_SRCS))
@@ -21,7 +21,7 @@ $(BUILD_DIR)/%.o: $(ASM)/%.asm
 	nasm -f elf32 $< -o $@
 
 $(OS): $(OS_OBJS) $(ASM_OBJS)
-	ld -m32 -melf_i386 -T linker.lds -s -o $(OS) $(OS_OBJS) $(ASM_OBJS)
+	ld -g -m32 -melf_i386 -T linker.lds -o $(OS) $(OS_OBJS) $(ASM_OBJS)
 
 clean:
 	rm $(BUILD_DIR)/*

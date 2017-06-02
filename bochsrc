@@ -1,8 +1,6 @@
-megs: 32
-romimage: file=/usr/share/bochs/BIOS-bochs-latest, address=0xf0000
-vgaromimage: /usr/share/bochs/VGABIOS-elpin-2.40
-floppya: 1_44=/dev/loop0, status=inserted
-boot: a
-mouse: enabled=0
-clock: sync=realtime
-cpu: ips=500000
+megs: 128
+cpu: count=1, ips=10000000
+vgaromimage: file=/usr/share/vgabios/vgabios.bin 
+1.44M 3.5" media:
+floppya: 1_44=floppy.img, status=inserted
+boot: floppy

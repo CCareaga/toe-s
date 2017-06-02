@@ -6,6 +6,7 @@
 #include "include/sys.h"
 #include "include/multiboot.h"
 #include "include/pmm.h"
+#include "include/vmm.h"
 
 extern uint32_t end;
 extern uint32_t start;
@@ -37,7 +38,10 @@ int kmain(multiboot_info_t *mbi) {
     
     uint32_t *ptr = (uint32_t*) 0xa0000000;
     uint32_t do_page_fault = *ptr;
-	
+
+    // vga_write(itoa(do_page_fault, 16));	
+    asm volatile ("int $0x3");
+
     vga_write("Paging enabled!\n");
 
     for(;;){

@@ -24,7 +24,7 @@ static void timer_handler(registers* regs)
 void init_timer(uint32_t frequency)
 {
    // add our timer handler to the irq handler array irq 0
-   add_handler(0, &timer_handler);
+   add_handler(32, &timer_handler);
 
    // The value we send to the PIT is the value to divide it's input clock
    // (1193180 Hz) by, to get our required frequency. Important to note is
