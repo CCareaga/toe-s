@@ -30,6 +30,14 @@ void vga_scroll() {
 	cursor = WIDTH * (HEIGHT - 1);
 }
 
+void vga_writeln(const char* str) {
+    if (str) {
+        vga_write(str);
+    }
+
+    vga_write("\n");
+}
+
 void vga_write(const char* str) {
 
 	int i = 0;

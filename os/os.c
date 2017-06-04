@@ -17,14 +17,15 @@ int kmain(multiboot_info_t *mbi) {
 	init_gdt();
 	
 	set_color(0x2, 0);
-	vga_write("kernel loaded!\n");
+	vga_writeln("kernel loaded!");
 
 	set_color(0xb, 0);
-	vga_write("GDT installed!\n");
+	vga_writeln("GDT installed!");
 
 	init_idt();
 	set_color(0x4, 0);
-	vga_write("IDT installed!\n\n");
+	vga_writeln("IDT installed!");
+    vga_writeln(NULL);
 
 	set_color(0xd, 0);
 	//init_timer(1);
@@ -34,20 +35,16 @@ int kmain(multiboot_info_t *mbi) {
     init_paging();    
    
     vga_write("end of kernel: ");
-    vga_write(itoa(&end, 16));
-    vga_write("\n");
+    vga_writeln(itoa(&end, 16));
 
 	set_color(0x8, 0);
     
-    vga_write("Paging enabled!\n");
+    vga_writeln("Paging enabled!");
     
-    vga_write(itoa(pop_frame(), 16)); 
-    vga_write("\n"); 
-    vga_write(itoa(pop_frame(), 16)); 
-    // uint32_t *ptr = (uint32_t*) 0xa0000000;
-    // uint32_t do_page_fault = *ptr;
+    uint32_t *ptr = (uint32_t*) 0xa0000000;
+    uint32_t do_page_fault = *ptr;
 
-    // vga_write(itoa(do_page_fault, 16));	
+    vga_write(itoa(do_page_fault, 16));	
 
     for(;;){
 		//asm volatile ("hlt");
