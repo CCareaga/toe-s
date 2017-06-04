@@ -79,10 +79,11 @@ void keyboard_handler(registers *regs) {
 
     // my vga_write function takes a const char* so this is how I do 
     // it... not sure if this is the way but it works
+    // TODO: this probably needs to be fixed but it is fine for now!
     if (!(scancode & 0x80)) {
         if (kbdus[scancode]) {
             const char key[] = {kbdus[scancode]};
-            
+             
             if (modifiers.shift) {
                 vga_write("shift");
             }
@@ -92,7 +93,7 @@ void keyboard_handler(registers *regs) {
             if (modifiers.ctrl) {
                 vga_write("ctrl");
             }
-            vga_write(&key);
+            vga_write(itoa(scancode, 10));
         }
 
     }

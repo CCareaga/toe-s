@@ -3,18 +3,49 @@
 uint32_t page_dir[1024] __attribute__((aligned(4096)));
 uint32_t page_tables[1024][1024] __attribute__((aligned(4096)));
 
-void init_paging(uint32_t end) {
+uint32_t placement_addr = 0x0;
+
+// this is a simple allocator to dynamically move a pointer to the end of reserved
+// memory. this is useful becuase i can dynamically allocate a stack of frames
+// and then map it as part of my kernel
+
+uint32_t kmalloc(uint32_t size) {
+    uint32_t ret = placement_addr;
+    placement_addr += size;
+    return ret;
+}
+
+uint32_t kmalloc_page() {
+    return kmalloc(0x1000);
+}
+
+void page_round() {
+    placement_addr &= 0xFFFFF000;
+    placement_addr += 0x1000;
+}
+
+// right now all this does is identity map from 0x0 to the end of our kernel
+// I use two huge global variables for the page directory and the page tables
+// so the kernel goes from 0x10000 to around 0x500000, therefore we use two 
+// tables.
+
+// TODO: I may want to create definitions for setting bits on the PDE and PTE's
+// or maybe create structs for the page dirs and tables...
+
+void init_paging() {
     size_t i, j;
     uint32_t addr = 0x0;
     uint32_t frame;
     uint32_t index;
 
     for (i = 0; i < 1024; i++) {
-        page_dir[i] = 0x00000002; // clear the pd, writeable and not present
+        page_dir[i] = 0x2; // clear the pd, all tables writeable and not present
     }
 
     // here we iterate from the start of memory up to the end of our kernel
-    while(addr <= end) {
+    // NOTE: I don't use alloc_frame for this because all of the frames I am mapping
+    // here aren't on my frame stack (pmm.c)
+    while(addr <= placement_addr) {
         // we want to identity map the kernels memory so we iterate by 4 KiB
         // to get the address of the page we are looking at
         // we create indices to get our PTE from our page table array
@@ -29,6 +60,9 @@ void init_paging(uint32_t end) {
     for (i = 0; i <= index; i++) {
         // now we set the corresponding element in our page directory to the 
         // address of the page table we are using at the moment
+        // we have to map memory from 0x0 to the end of the kernel
+        // so we have two page tables to put in our pd we or the address 
+        // with 3 to mark these entries present
         page_dir[i] = ((uint32_t) page_tables[i]) | 3;
     }
     
@@ -62,5 +96,9 @@ void page_fault(registers *regs) {
     vga_write(") at 0x");
     vga_write(itoa(faulting_address, 16));
     vga_write("\n");
-    return;
+    // halt so that we dont trigger endless page faults.
+    asm volatile ("hlt");
 }
+
+// Next I need to implement some malloc/free type functions... a.k.a I need to set up 
+// a heap for dynamic allocation. Probably need to quite a bit more reading for that
