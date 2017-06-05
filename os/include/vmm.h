@@ -3,6 +3,7 @@
 
 #include "sys.h"
 #include "isr.h"
+#include "kheap.h"
 #include <stdint.h>
 
 extern uint32_t placement_addr;

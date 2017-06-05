@@ -1,5 +1,7 @@
 #include "include/vmm.h"
 
+extern heap_t *kheap;
+
 uint32_t page_dir[1024] __attribute__((aligned(4096)));
 uint32_t page_tables[1024][1024] __attribute__((aligned(4096)));
 
@@ -41,6 +43,10 @@ void init_paging() {
     uint32_t *page;
     uint32_t index;
 
+    heap_t *heap = kmalloc(sizeof(heap_t)); 
+
+    page_round();
+
     for (i = 0; i < 1024; i++) {
         page_dir[i] = 0x2; // clear the pd, all tables writeable and not present
     }
@@ -51,9 +57,8 @@ void init_paging() {
     while(addr <= placement_addr) {
         // we want to identity map the kernels memory so we iterate by 4 KiB
         // to get the address of the page we are looking at
-        // we create indices to get our PTE from our page table array
-        
-        page = get_page(addr);
+        // we create indices to get our PTE from our page table array 
+        page = get_page(addr); 
         *page = addr | 3;
 
         addr += 0x1000; // move to the start of the next page!
@@ -69,9 +74,15 @@ void init_paging() {
         // with 3 to mark these entries present
         page_dir[i] = ((uint32_t) page_tables[i]) | 3;
     }
+   
+    for (i = KHEAP_START; i < KHEAP_START + KHEAP_INIT_SIZE; i += 0x1000) {
+        page = get_page(i);
+        alloc_frame(page, 0, 0);
+    }
     
     add_handler(14, &page_fault);
     switch_page_directory((uint32_t) page_dir);    
+    init_heap(KHEAP_START, KHEAP_START + KHEAP_INIT_SIZE, KHEAP_MAX, heap);
 }
 
 // this function will take the given address and use it to index the correct page table
@@ -79,6 +90,10 @@ void init_paging() {
 uint32_t *get_page(uint32_t address) {
     uint32_t frame = address >> 12;
     uint32_t index = frame / 1024;
+
+    if (!(page_dir[index] & 1)) {
+        page_dir[index] = ((uint32_t) page_tables[index]) | 3;
+    }
 
     return &page_tables[index][frame % 1024]; 
 }
@@ -132,6 +147,3 @@ void page_fault(registers *regs) {
     // halt so that we dont trigger endless page faults.
     asm volatile ("hlt");
 }
-
-// Next I need to implement some malloc/free type functions... a.k.a I need to set up 
-// a heap for dynamic allocation. Probably need to quite a bit more reading for that

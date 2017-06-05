@@ -59,7 +59,6 @@ void init_pmm(multiboot_info_t *mbi, uint32_t kern_end) {
 	        }
 		}
 	}
-    page_round(); // we have allocated room for the stack so round to page boundary
 }
 
 void push_frame(uint32_t addr) {

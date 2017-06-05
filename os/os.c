@@ -41,7 +41,7 @@ int kmain(multiboot_info_t *mbi) {
     
     vga_writeln("Paging enabled!");
     
-    uint32_t *ptr = (uint32_t*) 0xa0000000;
+    uint32_t *ptr = (uint32_t*) 0xC0000000;
     uint32_t do_page_fault = *ptr;
 
     vga_write(itoa(do_page_fault, 16));	
