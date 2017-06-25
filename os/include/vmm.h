@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 extern uint32_t placement_addr;
+extern heap_t *kheap;
 
 uint32_t kmalloc(uint32_t size);
 uint32_t kmalloc_page();

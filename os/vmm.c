@@ -1,17 +1,20 @@
 #include "include/vmm.h"
 
-extern heap_t *kheap;
-
 uint32_t page_dir[1024] __attribute__((aligned(4096)));
 uint32_t page_tables[1024][1024] __attribute__((aligned(4096)));
 
 uint32_t placement_addr = 0x0;
+heap_t *kheap = NULL;
 
 // this is a simple allocator to dynamically move a pointer to the end of reserved
 // memory. this is useful becuase i can dynamically allocate a stack of frames
 // and then map it as part of my kernel
-
-uint32_t kmalloc(uint32_t size) {
+uint32_t kmalloc(size_t size) {
+    // if the kernel heap has been initialized then pass this call
+    // to the heap's alloc function otherwise we use the placement addr.
+    if (kheap) {
+        return alloc(kheap, size);
+    }
     uint32_t ret = placement_addr;
     placement_addr += size;
     return ret;
@@ -32,7 +35,7 @@ void page_round() {
 // right now all this does is identity map from 0x0 to the end of our kernel
 // I use two huge global variables for the page directory and the page tables
 // so the kernel goes from 0x10000 to around 0x500000, therefore we use two 
-// tables.
+// tables to map the kernel.
 
 // TODO: I may want to create definitions for setting bits on the PDE and PTE's
 // or maybe create structs for the page dirs and tables...
@@ -42,10 +45,13 @@ void init_paging() {
     uint32_t addr = 0x0;
     uint32_t *page;
     uint32_t index;
+    
+    // allocate some space for the heap structure
+    // and allocate 10 "bins" which will be linked lists of free heap space
+    kheap= (header_t *) kmalloc(sizeof(heap_t)); 
+    kheap->bins = (uint32_t *) kmalloc(sizeof(uint32_t) * 11);
 
-    heap_t *heap = kmalloc(sizeof(heap_t)); 
-
-    page_round();
+    page_round(); // round my placement address to a page boundary
 
     for (i = 0; i < 1024; i++) {
         page_dir[i] = 0x2; // clear the pd, all tables writeable and not present
@@ -82,7 +88,7 @@ void init_paging() {
     
     add_handler(14, &page_fault);
     switch_page_directory((uint32_t) page_dir);    
-    init_heap(KHEAP_START, KHEAP_START + KHEAP_INIT_SIZE, KHEAP_MAX, heap);
+    init_heap(KHEAP_START, KHEAP_START + KHEAP_INIT_SIZE, KHEAP_MAX, kheap);
 }
 
 // this function will take the given address and use it to index the correct page table
