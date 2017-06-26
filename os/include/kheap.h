@@ -10,6 +10,8 @@
 #define KHEAP_INIT_SIZE 0x1000000
 #define KHEAP_MAX 0xCFFFF000
 
+extern uint8_t kheap_init;
+
 typedef struct {
     uint32_t hole;
     uint32_t size;

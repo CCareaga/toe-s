@@ -12,7 +12,7 @@ heap_t *kheap = NULL;
 uint32_t kmalloc(size_t size) {
     // if the kernel heap has been initialized then pass this call
     // to the heap's alloc function otherwise we use the placement addr.
-    if (kheap) {
+    if (kheap_init) {
         return alloc(kheap, size);
     }
     uint32_t ret = placement_addr;
@@ -48,7 +48,7 @@ void init_paging() {
     
     // allocate some space for the heap structure
     // and allocate 10 "bins" which will be linked lists of free heap space
-    kheap= (header_t *) kmalloc(sizeof(heap_t)); 
+    kheap = (header_t *) kmalloc(sizeof(heap_t)); 
     kheap->bins = (uint32_t *) kmalloc(sizeof(uint32_t) * 11);
 
     page_round(); // round my placement address to a page boundary
