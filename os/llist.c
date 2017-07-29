@@ -9,16 +9,21 @@ uint32_t hdrsz = sizeof(header_t) / 4;
 
 void add(uint32_t *x, uint32_t *list) {
     // if the list is null then put x at location list is pointing too
+    header_t *headx = (header_t *) x;
+
     if (*list == 0x0) {
         *list = x;
+        uint32_t *p = x + hdrsz + 1;
+        *p = list;
         return;
     }
 
     // the list is not null so iterate through the list by deferencing 
-    uint32_t *current = (uint32_t *) *list;
-    while (next(current) != 0x0) {
+    header_t *current = (header_t *) *list;
+    
+    while (current->size < headx->size) {
         // when we derefernce we add 8 to skip the header data
-        current = (uint32_t *) next(current);
+        current = (header_t *) next(current);
     }
 
     // set the last item in the list's next to our new item
@@ -34,9 +39,10 @@ void add(uint32_t *x, uint32_t *list) {
 header_t *remove(uint32_t *x, uint32_t *list) {
     uint32_t *xnext = next(x);
     uint32_t *xprev = prev(x);
+    uint32_t *prev_addr = (uint32_t *) ((char *) x + sizeof(header_t) + 4);
 
-    // this is the only tem in the list so our list is now null
-    if (xprev == NULL && xnext == NULL) {
+    // this is the only item in the list so our list is now null
+    if (*prev_addr == list && xnext == NULL) {
         *list = NULL;
     }
 
@@ -48,7 +54,7 @@ header_t *remove(uint32_t *x, uint32_t *list) {
     }
     
     // this is the first chunk in the list so make the second one the head
-    else if (xprev == NULL) {
+    else if (*prev_addr = list) {
         uint32_t *next_prev = xnext + hdrsz + 1;
         *next_prev = NULL;
         *list = xnext;
@@ -66,6 +72,15 @@ header_t *remove(uint32_t *x, uint32_t *list) {
     
     memset((x + hdrsz), 0, 8); // clear the links to other nodes
     return (header_t *) x; // return pointer ot our now free block
+}
+
+uint32_t *get_list(header_t *head, heap_t *heap) {
+    uint32_t *prev_addr = (uint32_t *) *((char *) head + sizeof(header_t) + 4);
+
+    while (prev_addr > &heap->bins[10] || prev_addr < &heap->bins[0]) {
+        vga_writeln(itoa(prev_addr, 16));
+        prev_addr = (uint32_t *) *((char *) prev_addr + sizeof(header_t) + 4);
+    }
 }
 
 header_t *next(header_t *current) {

@@ -6,6 +6,13 @@ uint32_t page_tables[1024][1024] __attribute__((aligned(4096)));
 uint32_t placement_addr = 0x0;
 heap_t *kheap = NULL;
 
+void kfree(void* p) {
+    if (kheap_init) {
+        free(kheap, p);
+    }
+    vga_writeln("cannot free pointer, kernel heap is uninitialized!");
+}
+
 // this is a simple allocator to dynamically move a pointer to the end of reserved
 // memory. this is useful becuase i can dynamically allocate a stack of frames
 // and then map it as part of my kernel

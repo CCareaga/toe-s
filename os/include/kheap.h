@@ -35,5 +35,9 @@ void init_heap(uint32_t start, uint32_t end, uint32_t max, heap_t *heap);
 void *find_hole(size_t size, heap_t *heap);
 
 void *alloc(heap_t *heap, size_t size);
+void free(heap_t *heap, void *p);
 
+uint32_t get_bin_index(uint32_t sz);
+void create_foot(header_t *head);
+footer_t *get_foot(header_t *head);
 #endif
