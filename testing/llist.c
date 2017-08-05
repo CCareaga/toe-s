@@ -1,9 +1,9 @@
-#include "include/llist.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "llist.h"
 
 void add_node(bin_t *bin, node_t* node) {
-    node->next = NULL;
-    node->prev = NULL;
-
     node_t *temp = bin->head;
 
     if (bin->head == NULL) {
@@ -35,8 +35,8 @@ void add_node(bin_t *bin, node_t* node) {
         }
         else { // head is the only element
             node->next = bin->head;
-            bin->head->prev = node;
             bin->head = node;
+            bin->head->prev = node;
         }
     }
 }
@@ -80,22 +80,26 @@ node_t *get_best_fit(bin_t *bin, uint32_t size) {
     return NULL; // no fit!
 }
 
+node_t *next(node_t *current) {
+    return current->next;
+}
+
+node_t *prev(node_t *current) {
+    return current->prev;
+}
+
 node_t *make_node(uint32_t hole, uint32_t size) {
-    return;
+    node_t *new_node = (node_t *) malloc(sizeof(node_t));
+    new_node->size = size;
+    new_node->hole = hole;
 }
 
 void dump_bin(bin_t *bin) {
     node_t *temp = bin->head;
 
     while (temp != NULL) {
-        vga_write("NODE: ");
-        vga_write(itoa(temp, 16));
-        vga_write(" size: ");
-        vga_write(itoa(temp->size, 10));
-        vga_write(" hole: ");
-        vga_write(itoa(temp->hole, 10));
-        vga_writeln(NULL);
-
+        printf("%x hole: %d, size: %d \n", temp, temp->hole, temp->size);
         temp = temp->next;
     }
+    printf("\n");
 }

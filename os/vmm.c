@@ -9,6 +9,7 @@ heap_t *kheap = NULL;
 void kfree(void* p) {
     if (kheap_init) {
         free(kheap, p);
+        return; // ------------------
     }
     vga_writeln("cannot free pointer, kernel heap is uninitialized!");
 }
@@ -48,15 +49,17 @@ void page_round() {
 // or maybe create structs for the page dirs and tables...
 
 void init_paging() {
-    size_t i, j;
+    size_t i, j, k;
     uint32_t addr = 0x0;
     uint32_t *page;
     uint32_t index;
     
     // allocate some space for the heap structure
     // and allocate 10 "bins" which will be linked lists of free heap space
-    kheap = (header_t *) kmalloc(sizeof(heap_t)); 
-    kheap->bins = (uint32_t *) kmalloc(sizeof(uint32_t) * 11);
+    kheap = (heap_t *) kmalloc(sizeof(heap_t)); 
+    for (k = 0; k < 11; k++ ) {
+        kheap->bins[k] = (bin_t *) kmalloc(sizeof(bin_t));
+    }
 
     page_round(); // round my placement address to a page boundary
 

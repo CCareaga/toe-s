@@ -48,12 +48,13 @@ int kmain(multiboot_info_t *mbi) {
     vga_writeln(itoa(b, 16));
     vga_writeln(itoa(c, 16));
     vga_writeln("");
-    
+
+    kfree(b);
     kfree(c);
+
+
     vga_writeln(itoa(kmalloc(8), 16));
-     
-    // vga_writeln(itoa(test, 16));
-    
+   
     for(;;){
 		//asm volatile ("hlt");
 	}
