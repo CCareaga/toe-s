@@ -1,9 +1,10 @@
 #include "include/kheap.h"
+#include "include/vmm.h"
 
-extern uint8_t kheap_init = 0x0;
 uint32_t offset = sizeof(node_t) - 8;
+extern paging_t *kpaging;
 
-void init_heap(uint32_t start, uint32_t end, uint32_t max, heap_t *heap) {
+void init_heap(heap_t *heap, uint32_t start, uint32_t end, uint32_t max, uint8_t super, uint8_t ro) {
     // now since the heap starts with one huge section of memory we need to make 
     // give it a header and place it in the last bin, the last bin holds any chunks that 
     // are too large to fit into any other bin
@@ -13,12 +14,13 @@ void init_heap(uint32_t start, uint32_t end, uint32_t max, heap_t *heap) {
 
     create_foot(init_region);
 
-    add_node(heap->bins[10], init_region);
+    add_node(heap->bins[get_bin_index(init_region->size)], init_region);
 
     heap->start = start;
     heap->end = end;
     heap->max = max;
-    kheap_init = 0x1;
+    heap->super = super;
+    heap->ro = ro;
 }
 
 void *alloc(heap_t *heap, size_t size) {
@@ -55,7 +57,6 @@ void *alloc(heap_t *heap, size_t size) {
 
     found->hole = 0; 
     remove_node(heap->bins[index], found); // remove the requested chunk
-    // dump_bin(heap->bins[index]);
     
     found->prev = NULL;
     found->next = NULL;
@@ -95,7 +96,6 @@ void free(heap_t *heap, void *p) {
         new_foot = get_foot(head);
         new_foot->header = prev;
 
-        //add_node(heap->bins[get_bin_index(prev->size)], prev);
         head = prev;
     }
     // the next block is free too so coalesce
@@ -113,15 +113,41 @@ void free(heap_t *heap, void *p) {
         new_foot = get_foot(head);
         new_foot->header = head;
     }
+
     // add the new node that may have been coalesced or not
     head->hole = 1; // make sure this gets done
     add_node(heap->bins[get_bin_index(head->size)], head);
 }
+void expand(heap_t *heap, size_t sz) {
+    size_t old_size = heap->end - heap->start;
+    size_t new_size = old_size + sz;
+
+    if ((new_size & 0xfffff000) != 0) { // if not page aligned
+        new_size &= 0xfffff000;
+        new_size += 0x1000;
+    }
+
+    size_t i = old_size;
+    while (i < new_size) {
+        alloc_frame(get_page(heap->start + i, kpaging), 1, 1);
+        i += 0x1000;
+    }
+
+    heap->end = heap->start + new_size;
+    // get the wilderness node, it should always be the largest item in the
+    // last bin.. I think
+    node_t *wild = get_last_node(heap->bins[9]);
+    wild->size += sz;
+}
 
 uint32_t get_bin_index(size_t sz) {
     uint32_t index = 0;
+    sz = sz < 4 ? 4 : sz; // if size is less than 4 make it 4
+
     while (sz >>= 1) index++; // calculate log2(size);
-    if (index > 10) index = 10;
+    index -= 2; // since 4 bytes is the lowest subtract two from index
+    
+    if (index > 8) index = 8; // if sz was bigger than 1024, make it 8
     return index;
 }
 

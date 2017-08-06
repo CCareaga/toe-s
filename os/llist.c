@@ -64,6 +64,7 @@ void remove_node(bin_t * bin, node_t *node) {
         temp = temp->next;
     }
     // item not in list! 
+    vga_writeln("Node not found in list!");
 }
 
 node_t *get_best_fit(bin_t *bin, uint32_t size) {
@@ -80,8 +81,13 @@ node_t *get_best_fit(bin_t *bin, uint32_t size) {
     return NULL; // no fit!
 }
 
-node_t *make_node(uint32_t hole, uint32_t size) {
-    return;
+node_t *get_last_node(bin_t *bin) {
+    node_t *temp = bin->head;
+
+    while (temp->next != NULL) {
+        temp = temp->next;
+    }
+    return temp;
 }
 
 void dump_bin(bin_t *bin) {

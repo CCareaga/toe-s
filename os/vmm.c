@@ -1,12 +1,18 @@
 #include "include/vmm.h"
 
-uint32_t page_dir[1024] __attribute__((aligned(4096)));
-uint32_t page_tables[1024][1024] __attribute__((aligned(4096)));
+paging_t kern_paging __attribute__((aligned(4096)));
+// uint32_t page_dir[1024] __attribute__((aligned(4096)));
+// uint32_t page_tables[1024][1024] __attribute__((aligned(4096)));
+
+paging_t *kpaging = &kern_paging;
 
 uint32_t placement_addr = 0x0;
+uint8_t kheap_init = 0x0;
 heap_t *kheap = NULL;
 
 void kfree(void* p) {
+    if (!p) return;
+
     if (kheap_init) {
         free(kheap, p);
         return; // ------------------
@@ -64,7 +70,7 @@ void init_paging() {
     page_round(); // round my placement address to a page boundary
 
     for (i = 0; i < 1024; i++) {
-        page_dir[i] = 0x2; // clear the pd, all tables writeable and not present
+        kpaging->dir[i] = 0x2; // clear the pd, all tables writeable and not present
     }
 
     // here we iterate from the start of memory up to the end of our kernel
@@ -74,7 +80,7 @@ void init_paging() {
         // we want to identity map the kernels memory so we iterate by 4 KiB
         // to get the address of the page we are looking at
         // we create indices to get our PTE from our page table array 
-        page = get_page(addr); 
+        page = get_page(addr, kpaging); 
         *page = addr | 3;
 
         addr += 0x1000; // move to the start of the next page!
@@ -88,30 +94,31 @@ void init_paging() {
         // we have to map memory from 0x0 to the end of the kernel
         // so we have two page tables to put in our pd we or the address 
         // with 3 to mark these entries present
-        page_dir[i] = ((uint32_t) page_tables[i]) | 3;
+        kpaging->dir[i] = ((uint32_t) kpaging->tables[i]) | 3;
     }
    
     for (i = KHEAP_START; i < KHEAP_START + KHEAP_INIT_SIZE; i += 0x1000) {
-        page = get_page(i);
+        page = get_page(i, kpaging);
         alloc_frame(page, 0, 0);
     }
     
     add_handler(14, &page_fault);
-    switch_page_directory((uint32_t) page_dir);    
-    init_heap(KHEAP_START, KHEAP_START + KHEAP_INIT_SIZE, KHEAP_MAX, kheap);
+    switch_page_directory((uint32_t) kpaging->dir);    
+    init_heap(kheap, KHEAP_START, KHEAP_START + KHEAP_INIT_SIZE, KHEAP_MAX, 1, 0);
+    kheap_init = 0x1;
 }
 
 // this function will take the given address and use it to index the correct page table
 // it will then return a pointer to that PTE
-uint32_t *get_page(uint32_t address) {
+uint32_t *get_page(uint32_t address, paging_t *paging) {
     uint32_t frame = address >> 12;
     uint32_t index = frame / 1024;
 
-    if (!(page_dir[index] & 1)) {
-        page_dir[index] = ((uint32_t) page_tables[index]) | 3;
+    if (!(paging->dir[index] & 1)) {
+        paging->dir[index] = ((uint32_t) paging->tables[index]) | 3;
     }
 
-    return &page_tables[index][frame % 1024]; 
+    return &paging->tables[index][frame % 1024]; 
 }
 
 // this function will take the given page pointer (PTE pointer), it will grab a frame for it

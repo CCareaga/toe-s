@@ -10,7 +10,7 @@
 #define KHEAP_INIT_SIZE 0x1000000
 #define KHEAP_MAX 0xCFFFF000
 
-extern uint8_t kheap_init;
+// extern uint8_t kheap_init;
 
 typedef struct node_t {
     uint32_t hole;
@@ -32,13 +32,16 @@ typedef struct {
     uint32_t start;
     uint32_t end;
     uint32_t max;
-    bin_t *bins[10];
+    uint8_t super;
+    uint8_t ro;
+    bin_t *bins[9];
 } heap_t;
 
-void init_heap(uint32_t start, uint32_t end, uint32_t max, heap_t *heap);
+void init_heap(heap_t *heap, uint32_t start, uint32_t end, uint32_t max, uint8_t super, uint8_t ro);
 
 void *alloc(heap_t *heap, size_t size);
 void free(heap_t *heap, void *p);
+void expand(heap_t *heap, size_t sz);
 
 uint32_t get_bin_index(uint32_t sz);
 void create_foot(node_t *head);

@@ -40,7 +40,7 @@ int kmain(multiboot_info_t *mbi) {
 	set_color(0x8, 0);
 
     uint32_t *a = kmalloc(8);
-    uint32_t *b = kmalloc(8);
+    uint32_t *b = kmalloc(32);
     uint32_t *c = kmalloc(8);
 
     vga_writeln("Paging enabled!");
@@ -50,10 +50,9 @@ int kmain(multiboot_info_t *mbi) {
     vga_writeln("");
 
     kfree(b);
-    kfree(c);
 
-
-    vga_writeln(itoa(kmalloc(8), 16));
+    vga_writeln(itoa(kmalloc(4), 16));
+    vga_writeln(itoa(kmalloc(4), 16));
    
     for(;;){
 		//asm volatile ("hlt");
