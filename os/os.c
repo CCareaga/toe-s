@@ -39,20 +39,31 @@ int kmain(multiboot_info_t *mbi) {
 
 	set_color(0x8, 0);
 
-    uint32_t *a = kmalloc(8);
-    uint32_t *b = kmalloc(32);
-    uint32_t *c = kmalloc(8);
-
     vga_writeln("Paging enabled!");
+    
+    vga_writeln(NULL);
+	set_color(0x9, 0);
+
+    char *a = "this char array was allocated at compile time... lame";
+    vga_writeln(a);
+    vga_write("address: ");
     vga_writeln(itoa(a, 16));
+
+    vga_writeln(NULL);
+    
+    char *b, *c;
+    size_t i;
+
+    b = (char *) kmalloc(sizeof(char) * 256);
+    c = "this char array was dynamically allocated at runtime!";
+    for (i = 0; i < 54; i++) {
+        b[i] = c[i];
+    }
+    vga_writeln(b);
+    vga_write("address: ");
     vga_writeln(itoa(b, 16));
-    vga_writeln(itoa(c, 16));
-    vga_writeln("");
-
     kfree(b);
-
-    vga_writeln(itoa(kmalloc(4), 16));
-    vga_writeln(itoa(kmalloc(4), 16));
+    
    
     for(;;){
 		//asm volatile ("hlt");

@@ -9,6 +9,10 @@
 #define KHEAP_START 0xC0000000
 #define KHEAP_INIT_SIZE 0x1000000
 #define KHEAP_MAX 0xCFFFF000
+#define MIN_HEAP_SIZE 0x10000
+
+#define MIN_WILDERNESS 0x2000
+#define MAX_WILDERNESS 0x1000000
 
 // extern uint8_t kheap_init;
 
@@ -41,10 +45,13 @@ void init_heap(heap_t *heap, uint32_t start, uint32_t end, uint32_t max, uint8_t
 
 void *alloc(heap_t *heap, size_t size);
 void free(heap_t *heap, void *p);
-void expand(heap_t *heap, size_t sz);
+uint8_t expand(heap_t *heap, size_t sz);
+void contract(heap_t *heap, size_t sz);
 
 uint32_t get_bin_index(uint32_t sz);
 void create_foot(node_t *head);
 footer_t *get_foot(node_t *head);
+
+node_t *get_wilderness(heap_t *heap);
 
 #endif

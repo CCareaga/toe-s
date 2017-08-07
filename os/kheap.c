@@ -58,9 +58,22 @@ void *alloc(heap_t *heap, size_t size) {
     found->hole = 0; 
     remove_node(heap->bins[index], found); // remove the requested chunk
     
+    // check if the wilderness node is getting to small, if so expand heap
+    node_t *wild = get_wilderness(heap);
+    if (wild->size < MIN_WILDERNESS) {
+        uint8_t success = expand(heap, 0x1000);
+        if (success == 0) {
+            return NULL;
+        }
+    }
+    else if (wild->size > MAX_WILDERNESS) {
+        contract(heap, 0x1000);
+    }
+
     found->prev = NULL;
     found->next = NULL;
     return &found->next; 
+
 }
 
 // this is a generic free function which is why we take the specific heap as an arg
@@ -118,28 +131,78 @@ void free(heap_t *heap, void *p) {
     head->hole = 1; // make sure this gets done
     add_node(heap->bins[get_bin_index(head->size)], head);
 }
-void expand(heap_t *heap, size_t sz) {
+
+// this method expands the given heap by the given amount
+// as long as the new size doesn't pass the heap max
+// returns 1 on success and zero on failure
+uint8_t expand(heap_t *heap, size_t sz) {
     size_t old_size = heap->end - heap->start;
     size_t new_size = old_size + sz;
 
     if ((new_size & 0xfffff000) != 0) { // if not page aligned
         new_size &= 0xfffff000;
         new_size += 0x1000;
+
+        sz = new_size - old_size;
+    }
+
+    // make sure we can still expand
+    if (heap->start + new_size > heap->max) {
+        vga_writeln("heap maxed out! can't expand");
+        return 0;
     }
 
     size_t i = old_size;
+    // map some pages to for the added heap space
     while (i < new_size) {
         alloc_frame(get_page(heap->start + i, kpaging), 1, 1);
         i += 0x1000;
     }
 
-    heap->end = heap->start + new_size;
-    // get the wilderness node, it should always be the largest item in the
-    // last bin.. I think
-    node_t *wild = get_last_node(heap->bins[9]);
-    wild->size += sz;
+    node_t *wild = get_wilderness(heap);
+    footer_t *old_foot = get_foot(wild);
+    old_foot->header = NULL; // delete old foot
+
+    wild->size += sz; // make sure we update the wilderness node
+    footer_t *new_foot = get_foot(wild);
+    new_foot->header = wild;
+
+    heap->end = heap->start + new_size; // update the end of heap addr
+
+    return 1;
 }
 
+void contract(heap_t *heap, size_t sz) {
+    size_t old_size = heap->end - heap->start;
+    size_t new_size = old_size - sz;
+    
+    if (new_size & 0x1000) {
+        new_size &= 0x1000;
+        new_size += 0x1000;
+
+        sz = old_size - new_size;
+    }
+
+    if (new_size < MIN_HEAP_SIZE) {
+        new_size = MIN_HEAP_SIZE;
+    }
+
+    uint32_t i = old_size - 0x1000;
+    while (new_size < i) {
+        free_frame(get_page(heap->start + i, kpaging));
+        i -= 0x1000;
+    }
+    
+    node_t *wild = get_wilderness(heap);
+    // don't worry about clearing the old footer it is gone!
+    wild->size -= sz; // make sure we update the wilderness node
+    footer_t *new_foot = get_foot(wild);
+    new_foot->header = wild;
+
+    heap->end = heap->start + new_size; // update the end of heap addr
+}
+
+// this converts a size to its corresponding bin index
 uint32_t get_bin_index(size_t sz) {
     uint32_t index = 0;
     sz = sz < 4 ? 4 : sz; // if size is less than 4 make it 4
@@ -161,4 +224,11 @@ void create_foot(node_t *head) {
 //  this function uses some pointer arithmetic to get the addr of the foot
 footer_t *get_foot(node_t *node) {
     return (footer_t *) ((char *) node + sizeof(node_t) + node->size);
+}
+
+// we can assume the wilderness footer will always be at the end of the heap
+// so we use it to get the header for the wilderness chunk
+node_t *get_wilderness(heap_t *heap) {
+    footer_t *wild_foot = (footer_t *) ((char *) heap->end - sizeof(footer_t));
+    return wild_foot->header;
 }
