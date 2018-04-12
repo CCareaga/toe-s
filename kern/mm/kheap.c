@@ -1,0 +1,261 @@
+#include "kheap.h"
+#include "kmalloc.h"
+
+#define BIN_CNT 9
+#define BLCK_OVERHEAD (sizeof(block_t) + sizeof(footer_t))
+#define OFFSET 8
+
+typedef struct block_t {
+    uint8_t hole;
+    uint32_t size;
+
+    struct block_t* next;
+    struct block_t* prev;
+} block_t;
+
+typedef struct {
+    block_t *head;
+} bin_t;
+
+typedef struct {
+    uint32_t start;
+    uint32_t end;
+    uint32_t max;
+    uint8_t super;
+    uint8_t ro;
+    bin_t *bins[BIN_CNT];
+} heap_t;
+
+
+typedef struct { 
+    block_t *header;
+} footer_t;
+
+uint8_t kheap_initialized = 0;
+static heap_t *kheap;
+
+// prototypes
+void add_block_sorted(bin_t *bin, block_t *blck);
+void remove_block(bin_t *bin, block_t *blck);
+bin_t *get_bin(uint32_t sz);
+uint32_t get_bin_index(uint32_t sz);
+block_t *get_first_fit(bin_t *bin, uint32_t sz);
+void create_foot(block_t *blck);
+footer_t *get_foot(block_t *blck);
+
+
+// this is the heap pre initialization, it uses the dummy allocator
+// to create the needed heap structures.
+void kheap_pre_init() {
+    kheap = kmalloc(sizeof(heap_t));
+    kheap->start = KHEAP_START;
+    kheap->end = KHEAP_END;
+
+    for (int i = 0; i < BIN_CNT; i++) 
+        kheap->bins[i] = kmalloc(sizeof(bin_t));
+    
+    return;
+}
+
+// this is the second stage of initializaiton, this happens after we map
+// in the needed pages for our kernel heap. all we do here is create an
+// initial block and place it in its respective bin
+void kheap_init() {
+    block_t *init = (block_t *) KHEAP_START;
+    init->size = KHEAP_END - KHEAP_START - BLCK_OVERHEAD;
+
+    create_foot(init);
+    add_block_sorted(get_bin(init->size), init);
+
+    kheap_initialized = 1;
+}
+
+void *kheap_alloc(uint32_t sz) {
+    uint32_t idx = get_bin_index(sz);
+    bin_t *tmp = kheap->bins[idx];
+
+    block_t *found = get_first_fit(tmp, sz);
+
+    while (!found) {
+        tmp = kheap->bins[++idx];
+        found = get_first_fit(tmp, sz);
+    }
+
+    if ((found->size - sz) > (BLCK_OVERHEAD + MIN_ALLOC_SZ)) {
+        block_t *split = (block_t *) ((char *) found + BLCK_OVERHEAD + sz);
+        split->size = found->size - sz - BLCK_OVERHEAD;
+        split->hole = 1;
+
+        create_foot(split);
+        add_block_sorted(get_bin(split->size), split);
+
+        found->size = sz;
+        create_foot(found);
+    }
+    
+    found->hole = 0;
+    remove_block(tmp, found);
+
+    
+    found->prev = NULL;
+    found->next = NULL;
+
+    return &found->next;
+}
+
+void kheap_free(void  *addr) {
+    block_t *blck = (block_t *) ((char *) addr - OFFSET);
+
+    if (blck == (block_t *) kheap->start) {
+        blck->hole = 1;
+        add_block_sorted(get_bin(blck->size), blck);
+        return;
+    }
+
+    block_t *next = (block_t *) ((char *) get_foot(blck) + sizeof(footer_t));
+
+    footer_t *f = (footer_t *) ((char *) blck - sizeof(footer_t));
+    block_t *prev = f->header;
+
+    if (prev->hole) {
+        remove_block(get_bin(prev->size), prev);
+
+        prev->size += BLCK_OVERHEAD + blck->size;
+        footer_t *foot = get_foot(blck);
+        foot->header = prev;
+
+        blck = prev;
+    }
+
+    if (next->hole) {
+        remove_block(get_bin(next->size), next);
+
+        blck->size += BLCK_OVERHEAD + next->size;
+
+        footer_t *old_foot = get_foot(next);
+        old_foot->header = 0;
+        next->size = 0;
+        next->size = 0;
+
+        footer_t *new_foot = get_foot(blck);
+        new_foot->header = blck;
+    }
+
+    blck->hole = 1;
+    add_block_sorted(get_bin(blck->size), blck);
+}
+
+// creates a footer structure for the given block
+void create_foot(block_t *blck) {
+    footer_t *foot = get_foot(blck);
+    foot->header = blck;
+}
+
+// uses the size of a block to calculate and return the footer position
+footer_t *get_foot(block_t *blck) {
+    return (footer_t *) ((char *) blck + sizeof(block_t) + blck->size);
+}
+
+// explicit block list =====================
+
+void add_block_sorted(bin_t *bin, block_t *blck) {
+    blck->next = NULL;
+    blck->prev = NULL;
+
+    if (!bin->head) {
+        bin->head = blck;
+        return;
+    }
+
+    block_t *temp = bin->head;
+    block_t *prev = NULL;
+
+    while (temp &&temp->size <= blck->size) {
+        prev = temp;
+        temp = temp->next;
+    }
+
+    if (!temp) {
+        prev->next = blck;
+        blck->prev = prev;
+    }
+
+    else {
+        if (prev) {
+            blck->next = temp;
+            prev->next = blck;
+
+            blck->prev = prev;
+            temp->prev = blck;
+        }
+        else {
+            blck->next = bin->head;
+            bin->head->prev = blck;
+            bin->head = blck;
+        }
+    }
+}
+
+void remove_block(bin_t *bin, block_t *blck) {
+    if (!bin->head) return;
+    if (bin->head == blck) {
+        bin->head = bin->head->next;
+        return;
+    }
+
+    block_t *temp = bin->head->next;
+    while (temp) {
+        if (temp == blck) {
+            if (temp->next) {
+                temp->prev->next = temp->next;
+                temp->next->prev = temp->prev;
+            }
+            else {
+                temp->prev->next = NULL;
+            }
+
+            return;
+        }
+
+        temp = temp->next;
+    }
+
+    // block is not in the list...
+}
+
+// gets the first block that is large enough by iterating
+// through the provided free block bin
+block_t *get_first_fit(bin_t *bin, uint32_t sz) {
+    if (!bin->head) return NULL;
+
+    block_t *temp = bin->head;
+
+    while (temp) {
+        if (temp->size >= sz) {
+            return temp;
+        }
+
+        temp = temp->next;
+    }
+
+    return  NULL;
+}
+
+// gets a pointer to a bin given the size
+bin_t *get_bin(uint32_t sz) {
+    return kheap->bins[get_bin_index(sz)];
+}
+
+// calculates which bin to look in first for the provided size
+uint32_t get_bin_index(uint32_t sz) {
+    uint32_t index = 0;
+    sz = sz < 4 ? 4 : sz;
+
+    while (sz >>= 1) index++; 
+    index -= 2;
+
+    index = (index > BIN_CNT - 1) ?  (BIN_CNT - 1) : index;
+    return index;
+}
+
+

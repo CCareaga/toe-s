@@ -20,7 +20,7 @@ typedef struct node_t {
     uint32_t hole;
     uint32_t size;
     struct node_t* next;
-    struct node_t* prev;
+  struct node_t* prev;
 } node_t;
 
 typedef struct { 

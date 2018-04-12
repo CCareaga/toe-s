@@ -2,7 +2,7 @@ BUILD_DIR=../build/os
 OS=$(BUILD_DIR)/kernel.elf
 ASM=asm
 
-CFLAGS+=-g -ffreestanding -Wall -Wextra -m32 -nostdlib
+CFLAGS+=-g -ffreestanding -Wall -Wextra -m32 -nostdlib 
 
 OS_SRCS := $(wildcard *.c)
 OS_OBJS := $(patsubst %.c, $(BUILD_DIR)/%.o, $(OS_SRCS))
@@ -15,7 +15,7 @@ $(info $(ASM_OBJS))
 all: $(OS)
 
 $(BUILD_DIR)/%.o: %.c
-	i386-elf-gcc $(CFLAGS) -c $< -o $@
+	gcc $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/%.o: $(ASM)/%.asm
 	nasm -f elf32 $< -o $@

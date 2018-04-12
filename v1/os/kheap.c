@@ -1,5 +1,6 @@
 #include "include/kheap.h"
 #include "include/vmm.h"
+#include "include/llist.h"
 
 uint32_t offset = sizeof(node_t) - 8;
 extern paging_t *kpaging;
@@ -40,7 +41,7 @@ void *alloc(heap_t *heap, size_t size) {
     // the chunk we found is larger than we need so take what we need by splitting
     // and place the other piece in the correct bin!
     if ((found->size - size) > 4) {
-        node_t *split = ((char *) found + sizeof(node_t) + sizeof(footer_t)) + size; // pointer to new chnk
+        node_t *split = (node_t *) ((char *) found + sizeof(node_t) + sizeof(footer_t)) + size; // pointer to new chnk
         split->size = found->size - size - sizeof(node_t) - sizeof(footer_t);
         split->hole = 1;
    
@@ -86,7 +87,7 @@ void free(heap_t *heap, void *p) {
     // the address provided to the free function is the start of the free block, but
     // we want the header to we subtract the header size
     node_t *head = (node_t *) ((char *) p - offset);
-    if (head == heap->start) {
+    if (head == (node_t *) heap->start) {
         head->hole = 1; // make sure this gets done
         add_node(heap->bins[get_bin_index(head->size)], head);
         return;

@@ -1,3 +1,5 @@
+.intel_syntax noprefix
+
 global gdt_install 
 
 gdt_install:
