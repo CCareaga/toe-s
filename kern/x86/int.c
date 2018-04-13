@@ -51,19 +51,8 @@ void isr_handler(regs_t *r) {
     // otherwise just print out some info
     if (handlers[n])
         handlers[n](r);
-
     else 
         kprintf("recieved trap %x (%d) -> %s \n", n, n, trap_messages[n]);
-
-
-    // if the interrupt came from slave also send it the ack
-    if (n >= 40) 
-        outport(0xA0, 0x20);
-
-    // if int is from master PIC send it the ACK
-    if (n >= 32)
-        outport(0x20, 0x20);
-
 }
 
 void irq_handler(regs_t *r) {
@@ -73,10 +62,8 @@ void irq_handler(regs_t *r) {
     // otherwise just print out some info
     if (handlers[n])
         handlers[n](r);
-
     else 
         kprintf("recieved hardware int %x (%d) \n", n, n);
-
 
     // if the interrupt came from slave also send it the ACK
     if (n >= 40) 
@@ -84,6 +71,5 @@ void irq_handler(regs_t *r) {
     
     // always send master the ACK
     outport(0x20, 0x20);
-
 }
 

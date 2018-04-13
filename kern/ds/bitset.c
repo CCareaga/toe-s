@@ -3,7 +3,7 @@
 #include "klib.h"
 
 struct bitset {
-    uint32_t sz;    // sz of the bits array (num of bits * 32)
+    uint32_t sz;    // size of bits array (32 * num of bits)
     uint32_t *bits; // array of integers representing bits
 };
 
@@ -25,30 +25,38 @@ bs_t *bs_init(uint32_t sz) {
 // set a bit given by idx
 void bs_set(bs_t *bs, uint32_t idx) {
     // ASSERT(idx < bs->sz * 32);
-    uint32_t arr_idx = idx / 32;
-    uint32_t offset = idx % 32;
+    if (idx < bs_get_size(bs)) {
+        uint32_t arr_idx = idx / 32;
+        uint32_t offset = idx % 32;
 
-    bs->bits[arr_idx] |= 0x1 << offset;
+        bs->bits[arr_idx] |= 0x1 << offset;
+    }
 }
 
 // clear a bit given by idx
 void bs_clr(bs_t *bs, uint32_t idx) {
     // ASSERT(idx < bs->sz * 32);
-    uint32_t arr_idx = idx / 32;
-    uint32_t offset = idx % 32;
-    uint32_t mask = 0xffffffff ^ (0x1 << offset); // 11110111..111
+    if (idx < bs_get_size(bs)) {
+        uint32_t arr_idx = idx / 32;
+        uint32_t offset = idx % 32;
+        uint32_t mask = 0xffffffff ^ (0x1 << offset); // 11110111..111
 
-    bs->bits[arr_idx] &= mask;
+        bs->bits[arr_idx] &= mask;
+    }
 }
 
 // return the value of a bit given by idx
 uint8_t bs_tst(bs_t *bs, uint32_t idx) {
     // ASSERT(idx < bs->sz * 32);
-    uint32_t arr_idx = idx / 32;
-    uint32_t offset = idx % 32;
-    uint32_t mask = (0x1 << offset); // 000100..00
+    if (idx < bs_get_size(bs)) {
+        uint32_t arr_idx = idx / 32;
+        uint32_t offset = idx % 32;
+        uint32_t mask = (0x1 << offset); // 000100..00
 
-    return (bs->bits[arr_idx] & mask) >> offset;
+        return (bs->bits[arr_idx] & mask) >> offset;
+    }
+
+    return 1;
 }
 
 // print the bitmap out
@@ -69,9 +77,9 @@ uint32_t bs_first_clr(bs_t *bs) {
             if (!bs_tst(bs, (i * 32) + n))
                 return (i * 32) + n;
 
-    return bs->sz;
+    return bs_get_size(bs);
 }
 
 uint32_t bs_get_size(bs_t *bs) {
-    return bs->sz;
+    return bs->sz * 32;
 }

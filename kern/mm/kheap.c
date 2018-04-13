@@ -6,29 +6,29 @@
 #define OFFSET 8
 
 typedef struct block_t {
-    uint8_t hole;
-    uint32_t size;
+    uint8_t hole;           // if this block free?
+    uint32_t size;          // what is its size
 
-    struct block_t* next;
-    struct block_t* prev;
+    struct block_t* next;   // next node in the bin
+    struct block_t* prev;   // previous node in the bin
 } block_t;
 
 typedef struct {
-    block_t *head;
+    block_t *head;      // sorted doubly linked list head
 } bin_t;
 
 typedef struct {
-    uint32_t start;
-    uint32_t end;
-    uint32_t max;
-    uint8_t super;
-    uint8_t ro;
-    bin_t *bins[BIN_CNT];
+    uint32_t start;         // start of the heap
+    uint32_t end;           // end of the heap
+    uint32_t max;           // max end of the heap
+    uint8_t super;          // priv level
+    uint8_t ro;             // read only?
+    bin_t *bins[BIN_CNT];   // bins, one for each size (9 possible)
 } heap_t;
 
 
 typedef struct { 
-    block_t *header;
+    block_t *header;        // pointer to the header of this block
 } footer_t;
 
 uint8_t kheap_initialized = 0;
@@ -70,6 +70,11 @@ void kheap_init() {
     kheap_initialized = 1;
 }
 
+// allocate a block of a certain size using the kheap
+// what we do here is check the first bin where a block on this size
+// *should* be, if there isn't one to fill the request we move to the 
+// next largest bin. worst case we eventually get to th wilderness block
+// if a block is way larger than the request we simply split it 
 void *kheap_alloc(uint32_t sz) {
     uint32_t idx = get_bin_index(sz);
     bin_t *tmp = kheap->bins[idx];
@@ -103,6 +108,10 @@ void *kheap_alloc(uint32_t sz) {
     return &found->next;
 }
 
+// this function frees an address provided by kheap_alloc
+// what we do i check the block before and after this block
+// in memory, then we depending one whether or not those blocks
+// are free we coalesce the block then place it into a bin
 void kheap_free(void  *addr) {
     block_t *blck = (block_t *) ((char *) addr - OFFSET);
 
@@ -158,6 +167,7 @@ footer_t *get_foot(block_t *blck) {
 
 // explicit block list =====================
 
+// adds a block to a bin making sure to maintain sorted order
 void add_block_sorted(bin_t *bin, block_t *blck) {
     blck->next = NULL;
     blck->prev = NULL;
@@ -196,6 +206,7 @@ void add_block_sorted(bin_t *bin, block_t *blck) {
     }
 }
 
+// removes a block from the provided bin
 void remove_block(bin_t *bin, block_t *blck) {
     if (!bin->head) return;
     if (bin->head == blck) {
@@ -219,8 +230,8 @@ void remove_block(bin_t *bin, block_t *blck) {
 
         temp = temp->next;
     }
-
-    // block is not in the list...
+    
+    kprintf("block not in bin... whatttt \n");
 }
 
 // gets the first block that is large enough by iterating

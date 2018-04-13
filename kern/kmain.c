@@ -18,21 +18,22 @@ int kmain(multiboot_t *mboot, uint32_t mboot_mag, uintptr_t esp) {
     gdt_init();
     idt_init();
     
-    kprintf(" \1 TOE-S \1 \n\n");
+    kprintf(" \1 TOE-S \1 \n");
     kprintf("end: 0x%x \n", &end);
 
-    kprintf("alloc pre heap: 0x%x \n", kmalloc(8));
-
+    // initialize memory management
     pmm_init(mboot);
     vmm_init();
 
-    kprintf("paging initialized \n\n");
+    kprintf("paging and heap initialized \n\n");
     
     uint32_t a, b, c, d, e, f;
     kprintf("a: 0x%x \n", a = kmalloc(8));
     kprintf("b: 0x%x \n", b = kmalloc(8));
     kprintf("c: 0x%x \n", c = kmalloc(8));
     kprintf("d: 0x%x \n", d = kmalloc(8));
+
+    kprintf("phys of a: 0x%x \n", get_physical(a));
 
     kfree(a);
     kfree(c);

@@ -5,6 +5,8 @@
 #include "klib.h"
 #include "kheap.h"
 
+pg_dir_t *kern_dir;
+
 // this function fetches a page addr using the provided virtual 
 // address and page directory. if the table that holds the page addr
 // doesn't exist and the create flag is set, we allocate a new table
@@ -18,9 +20,10 @@ page_t *get_page(uint32_t addr, uint8_t create, pg_dir_t *pg_dir) {
     }
     else if (create) {
         uint32_t phys;
+
         pg_dir->tables[pd_idx] = kmalloc_ap(sizeof(pg_tab_t), &phys);
         memset(pg_dir->tables[pd_idx], 0, sizeof(pg_tab_t));
-        // give the actual pg dir entry user, rw, present
+
         pg_dir->phys_tabs[pd_idx] = phys | PDE_P | PDE_W | PDE_U;
 
         kprintf("creating a new page table \n");
@@ -39,14 +42,20 @@ void map_page(page_t *pg, uint8_t usr, uint8_t write, uint32_t addr) {
     pg->rw  = write;
     pg->usr = !usr;
     
-    if (addr) {
-        set_frame(addr); 
-        pg->addr = addr / PG_SZ;
-    }
+    if (pg->addr == 0) {
+        if (addr) {
+            uint32_t success = set_frame(addr); 
+            if (success)
+                pg->addr = addr / PG_SZ;
+            else {
+                pg->present = 0;
+                kprintf("could not map 0x%x, out of physical range \n", addr);
+            }
+        }
 
-    else {
-        if (!pg->addr) {
+        else {
             uint32_t frame = get_frame();
+            kprintf("grabbing the first free phys frame 0x%x \n", frame);
 
             if (frame != 0xffffffff)
                 pg->addr = frame / PG_SZ;
@@ -96,27 +105,52 @@ void vmm_init() {
     // we begin mapping pages, for now all the entires are zero
 
     uint32_t phys;
-    pg_dir_t *kern_dir = kmalloc_ap(sizeof(pg_dir_t), &phys);
+    kern_dir = kmalloc_ap(sizeof(pg_dir_t), &phys);
+    memset(kern_dir, 0, sizeof(pg_dir_t));
     kern_dir->phys = phys;
+
+    page = get_page(0, 1, kern_dir);
+    page->present = 0;
+    set_frame(0);
 
     kheap_pre_init();
 
-    // identity map the from 0 all the way to the end of the dummy kernel heap
-    for (uint32_t i = 0x0; i <= (uint32_t) kmalloc_get_end(); i += PG_SZ) {
-        page = get_page(i, 1, kern_dir);
-        map_page(page, 1, 1, i);
-    }
-    
-    // map some pages for the kernel heap, these dont have to be identity mapped
-    for (uint32_t i = KHEAP_START; i <= KHEAP_END; i += PG_SZ) {
-        page = get_page(i, 1, kern_dir);
-        map_page(page, 1, 1, NULL);
+    uint32_t vaddr = 0x1000;
+
+    // identity map the from 0 all the way to the end of the dummy kernel heap since we 
+    // also need to map in the real heap we map identity map in one page after the 
+    // dummy heap ptr. then when we start mapping the heap there is already a spot
+    // for the heaps page table... sort of confusing
+    for (vaddr = 0x1000; vaddr <= (uint32_t) kmalloc_get_end() + 0x1000; vaddr += PG_SZ) {
+        page = get_page(vaddr, 1, kern_dir);
+        map_page(page, 1, 1, vaddr);
     }
 
+    // map some pages for the kernel heap, these dont have to be identity mapped
+    for (vaddr = KHEAP_START; vaddr <= KHEAP_END; vaddr += PG_SZ) {
+        page = get_page(vaddr, 1, kern_dir);
+        map_page(page, 1, 1, NULL);
+    }
 
     add_int_handler(14, &page_fault);
     switch_page_directory(kern_dir->phys);
 
     kheap_init();
+}
+
+// this function takes a virtual address and returns the physical
+// address it is mapped to, it just looks it up in the page dir
+uint32_t get_physical(uint32_t virt) {
+    uint32_t pd_idx = PD_IDX(virt);
+    uint32_t pt_idx = PT_IDX(virt);
+    uint32_t offset = virt % PG_SZ;
+    uint32_t ret = 0;
+
+    if (kern_dir->tables[pd_idx]) {
+        page_t *page = &kern_dir->tables[pd_idx]->pages[pt_idx];
+        ret = ((uint32_t) page->addr * PG_SZ) + offset;
+    }
+
+    return ret;
 }
 

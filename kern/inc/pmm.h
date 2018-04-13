@@ -6,6 +6,6 @@
 void pmm_init(multiboot_t *mb);
 
 uint32_t get_frame();
-void set_frame(uint32_t addr);
+uint32_t set_frame(uint32_t addr);
 
 #endif

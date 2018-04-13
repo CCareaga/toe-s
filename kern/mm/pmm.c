@@ -44,14 +44,19 @@ uint32_t get_frame() {
         return 0xffffffff;
     }
 
-    bs_set(frames, idx);
     set_frame(idx * PG_SZ);
 
     return idx * PG_SZ;
 }
 
 // mark the provided page frame in our bit set
-void set_frame(uint32_t addr) {
+uint32_t set_frame(uint32_t addr) {
     uint32_t idx = addr / PG_SZ;
-    bs_set(frames, idx);
+    if (idx < bs_get_size(frames)) {
+        bs_set(frames, idx);
+        return 1;
+    }
+    else {
+        return 0;
+    }
 }
