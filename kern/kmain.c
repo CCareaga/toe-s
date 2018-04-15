@@ -5,6 +5,7 @@
 #include "pmm.h"
 #include "vmm.h"
 #include "kmalloc.h"
+#include "timer.h"
 
 extern void *end;
 
@@ -43,11 +44,13 @@ int kmain(multiboot_t *mboot, uint32_t mboot_mag, uintptr_t esp) {
     kfree(b);
     kprintf("f: 0x%x \n", f = kmalloc(24));
 
+    timer_init();
+
     
     // int *p = 0xc0000000;
     // *p = 1;
 
-    // for (;;) {}
+    for (;;) {}
 
     return 0;
 }

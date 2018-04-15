@@ -45,6 +45,10 @@ typedef struct page_dir {
     uintptr_t   phys;               // physical address of this page directory itself
 } pg_dir_t;
 
+typedef struct tregs {
+    uint32_t eax, ebx, ecx, edx, esi,edi, esp, ebp, eip, eflags, cr3;
+} tregs_t;
+
 typedef void (*handler_t)(regs_t *);
 
 void idt_init();

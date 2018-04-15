@@ -1,5 +1,6 @@
 #include "kheap.h"
 #include "kmalloc.h"
+#include "klib.h"
 
 #define BIN_CNT 9
 #define BLCK_OVERHEAD (sizeof(block_t) + sizeof(footer_t))
