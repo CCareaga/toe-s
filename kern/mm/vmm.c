@@ -159,3 +159,11 @@ uint32_t get_physical(uint32_t virt, pg_dir_t* pd) {
     return ret;
 }
 
+// allocates some space for a stack by mappin' in some pages
+uint32_t allocate_stack(uint32_t start, uint32_t sz, pg_dir_t* pd) {
+    for (int i = start; i < start + sz; i += PG_SZ) {
+        page = get_page(vaddr, 1, pd);
+        map_page(page, 1, 1, vaddr);
+    }
+}
+

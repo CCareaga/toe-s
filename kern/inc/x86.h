@@ -13,8 +13,8 @@
 #define PDE_W           0x2
 #define PDE_U           0x4
 
-#define HIGHER_HALF 0x0
-#define HIGHER_HALF_START 0xC0000000
+#define HIGHER_HALF         0x0
+#define HIGHER_HALF_START   0xC0000000
 
 typedef struct dt_p {
     uint16_t  lim;
@@ -49,7 +49,7 @@ typedef struct page_dir {
 } pg_dir_t;
 
 typedef struct tregs {
-    uint32_t eax, ebx, ecx, edx, esi,edi, esp, ebp, eip, eflags, cr3;
+    uint32_t eax, ebx, ecx, edx, esi, edi, esp, ebp, eip, eflags, cr3;
 } tregs_t;
 
 typedef void (*handler_t)(regs_t *);

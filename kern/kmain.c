@@ -53,8 +53,8 @@ int kmain(multiboot_t *mboot, uint32_t mboot_mag, uintptr_t esp) {
 #endif
 
     timer_init();
+    tasking_init();
 
-    
     // int *p = 0xc0000000;
     // *p = 1;
 
