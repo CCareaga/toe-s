@@ -8,6 +8,7 @@
 #include "timer.h"
 
 extern void *end;
+extern void higher_half(int offset);
 
 int kmain(multiboot_t *mboot, uint32_t mboot_mag, uintptr_t esp) { 
    
@@ -34,8 +35,6 @@ int kmain(multiboot_t *mboot, uint32_t mboot_mag, uintptr_t esp) {
     kprintf("c: 0x%x \n", c = kmalloc(8));
     kprintf("d: 0x%x \n", d = kmalloc(8));
 
-    kprintf("phys of a: 0x%x \n", get_physical(a));
-
     kfree(a);
     kfree(c);
 
@@ -43,6 +42,15 @@ int kmain(multiboot_t *mboot, uint32_t mboot_mag, uintptr_t esp) {
 
     kfree(b);
     kprintf("f: 0x%x \n", f = kmalloc(24));
+
+#if HIGHER_HALF
+    int local = 0xDEADBEEF;
+    int *virt = (char *) &local + 0xc0000000;
+
+    kprintf("value at 0x%x = 0x%x \n", virt, *virt);
+
+    higher_half(HIGHER_HALF_START);
+#endif
 
     timer_init();
 

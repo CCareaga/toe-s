@@ -3,11 +3,20 @@
 #include "system.h"
 #include "x86.h"
 
-#define FREQ 1
+#define FREQ 10000
 #define CLOCK_FREQ 1193180
 
+uint32_t ticks = 0;
+
 static void timer_handler(regs_t *r) {
-    // kprintf("clock update \n");
+    ticks++;
+
+#if 1
+    if (ticks % (2*FREQ) == 0) {
+        ticks = 0;
+        kprintf("clock update \n");
+    }
+#endif
     
 }
 
@@ -17,9 +26,10 @@ void timer_init() {
     uint32_t div = CLOCK_FREQ / FREQ;
 
     outport(0x43, 0x36);
+    
 
-    outport(0x40, div & 0xFF);
-    outport(0x40, div >> 8);
+    outport(0x40, (div & 0xFF));
+    outport(0x40, ((div >> 8) & 0xFF));
 }
 
 

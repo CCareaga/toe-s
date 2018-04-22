@@ -22,6 +22,8 @@
 .long 0
 .long 32
 
+.global stack_top
+.global stack_bottom
 /* .stack resides in .bss */
 .section .stack, "aw", @nobits
 stack_bottom:
@@ -36,6 +38,7 @@ stack_top:
 .extern kmain
 .type kmain, @function
 
+.global start
 start:
     /* Setup our stack */
     mov $stack_top, %esp

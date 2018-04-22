@@ -1,11 +1,12 @@
 #include "vmm.h"
 #include "pmm.h"
 #include "kmalloc.h"
-#include "x86.h"
 #include "klib.h"
 #include "kheap.h"
 
 pg_dir_t *kern_dir;
+
+extern void higher_half(int);
 
 // this function fetches a page addr using the provided virtual 
 // address and page directory. if the table that holds the page addr
@@ -124,6 +125,10 @@ void vmm_init() {
     for (vaddr = 0x1000; vaddr <= (uint32_t) kmalloc_get_end() + 0x1000; vaddr += PG_SZ) {
         page = get_page(vaddr, 1, kern_dir);
         map_page(page, 1, 1, vaddr);
+#if HIGHER_HALF
+        page = get_page(vaddr + HIGHER_HALF_START, 1, kern_dir);
+        map_page(page, 1, 1, vaddr);
+#endif
     }
 
     // map some pages for the kernel heap, these dont have to be identity mapped
@@ -140,14 +145,14 @@ void vmm_init() {
 
 // this function takes a virtual address and returns the physical
 // address it is mapped to, it just looks it up in the page dir
-uint32_t get_physical(uint32_t virt) {
+uint32_t get_physical(uint32_t virt, pg_dir_t* pd) {
     uint32_t pd_idx = PD_IDX(virt);
     uint32_t pt_idx = PT_IDX(virt);
     uint32_t offset = virt % PG_SZ;
     uint32_t ret = 0;
 
     if (kern_dir->tables[pd_idx]) {
-        page_t *page = &kern_dir->tables[pd_idx]->pages[pt_idx];
+        page_t *page = &pd->tables[pd_idx]->pages[pt_idx];
         ret = ((uint32_t) page->addr * PG_SZ) + offset;
     }
 

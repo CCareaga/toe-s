@@ -13,6 +13,9 @@
 #define PDE_W           0x2
 #define PDE_U           0x4
 
+#define HIGHER_HALF 0x0
+#define HIGHER_HALF_START 0xC0000000
+
 typedef struct dt_p {
     uint16_t  lim;
     uint32_t base;
