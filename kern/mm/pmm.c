@@ -19,9 +19,11 @@ void pmm_init(multiboot_t *mb) {
 
     uint32_t addr;
 
-    mboot_memmap_t *mmap = (mboot_memmap_t *) mb->mmap_addr; 
-    while ((unsigned long) mmap < mb->mmap_addr + mb->mmap_length) {
+    mboot_memmap_t *mmap = (mboot_memmap_t *) P2V(mb->mmap_addr);
+
+    while ((unsigned long) mmap < P2V(mb->mmap_addr) + mb->mmap_length) {
         if (mmap->type == 2) {
+            kprintf("mmap type 2: 0x%x \n", mmap->length);
             for (unsigned long long int i = 0; i < mmap->length; i += PG_SZ) {
                 addr = mmap->base_addr + i;
 
@@ -59,4 +61,9 @@ uint32_t set_frame(uint32_t addr) {
     else {
         return 0;
     }
+}
+
+void free_frame(uint32_t addr) {
+    uint32_t idx = addr / PG_SZ;
+    bs_clr(frames, idx);
 }

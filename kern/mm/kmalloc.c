@@ -1,6 +1,7 @@
 #include "kmalloc.h"
 #include "kheap.h"
 #include "x86.h"
+#include "pmm.h"
 
 extern void *end;
 extern uint8_t kheap_initialized;
@@ -23,7 +24,7 @@ static void *kmalloc_helper(uint32_t sz, uint8_t aligned, uint32_t *paddr) {
         alloc_ptr = (char *) PG_ROUND_UP((uint32_t) alloc_ptr);
 
     if (paddr)
-        *paddr = (uint32_t) alloc_ptr;
+        *paddr = (uint32_t) V2P(alloc_ptr);
 
     addr = (void *) alloc_ptr;
     alloc_ptr += sz;

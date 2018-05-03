@@ -43,15 +43,6 @@ int kmain(multiboot_t *mboot, uint32_t mboot_mag, uintptr_t esp) {
     kfree(b);
     kprintf("f: 0x%x \n", f = kmalloc(24));
 
-#if HIGHER_HALF
-    int local = 0xDEADBEEF;
-    int *virt = (char *) &local + 0xc0000000;
-
-    kprintf("value at 0x%x = 0x%x \n", virt, *virt);
-
-    higher_half(HIGHER_HALF_START);
-#endif
-
     timer_init();
     tasking_init();
 

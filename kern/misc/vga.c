@@ -6,7 +6,7 @@
 #define BUFFER_LEN 2000
 
 static int cursor;
-static uint16_t *vga_mem = (uint16_t *) 0xB8000;
+static uint16_t *vga_mem = (uint16_t *) 0xC00B8000;
 static uint16_t attribute;
 
 // set the color to white on black, clear the screen

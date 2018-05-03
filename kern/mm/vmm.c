@@ -6,8 +6,6 @@
 
 pg_dir_t *kern_dir;
 
-extern void higher_half(int);
-
 // this function fetches a page addr using the provided virtual 
 // address and page directory. if the table that holds the page addr
 // doesn't exist and the create flag is set, we allocate a new table
@@ -66,6 +64,17 @@ void map_page(page_t *pg, uint8_t usr, uint8_t write, uint32_t addr) {
     }
 }
 
+void unmap_page(page_t *pg) {
+    pg->present = 0;
+    pg->rw  = 0;
+    pg->usr = 0;
+
+    if (pg->addr) {
+        free_frame(pg->addr);
+        pg->addr = 0;
+    }
+}
+
 // function to switch to the provided directory
 void switch_page_directory(uintptr_t dir) {
     asm volatile("mov %0, %%cr3":: "r"(dir));
@@ -116,19 +125,15 @@ void vmm_init() {
 
     kheap_pre_init();
 
-    uint32_t vaddr = 0x1000;
+    uint32_t vaddr;
 
     // identity map the from 0 all the way to the end of the dummy kernel heap since we 
     // also need to map in the real heap we map identity map in one page after the 
     // dummy heap ptr. then when we start mapping the heap there is already a spot
     // for the heaps page table... sort of confusing
-    for (vaddr = 0x1000; vaddr <= (uint32_t) kmalloc_get_end() + 0x1000; vaddr += PG_SZ) {
+    for (vaddr = P2V(0x1000); vaddr <= (uint32_t) kmalloc_get_end() + 0x1000; vaddr += PG_SZ) {
         page = get_page(vaddr, 1, kern_dir);
-        map_page(page, 1, 1, vaddr);
-#if HIGHER_HALF
-        page = get_page(vaddr + HIGHER_HALF_START, 1, kern_dir);
-        map_page(page, 1, 1, vaddr);
-#endif
+        map_page(page, 1, 1, V2P(vaddr));
     }
 
     // map some pages for the kernel heap, these dont have to be identity mapped
@@ -161,9 +166,10 @@ uint32_t get_physical(uint32_t virt, pg_dir_t* pd) {
 
 // allocates some space for a stack by mappin' in some pages
 uint32_t allocate_stack(uint32_t start, uint32_t sz, pg_dir_t* pd) {
+    page_t *page;
     for (int i = start; i < start + sz; i += PG_SZ) {
-        page = get_page(vaddr, 1, pd);
-        map_page(page, 1, 1, vaddr);
+        page = get_page(i, 1, pd);
+        map_page(page, 1, 1, NULL);
     }
 }
 

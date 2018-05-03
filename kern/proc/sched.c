@@ -1,6 +1,7 @@
 #include "sched.h"
 #include "task.h"
 #include "init.h"
+#include "kmalloc.h"
 
 typedef struct tlist {
     task_t *head;
@@ -16,7 +17,6 @@ void tasking_init() {
 
     task_t *init = create_task(&init_entry);
     ready->head = init;
-    switch_to(int);
 }
 
 void schedule() {
