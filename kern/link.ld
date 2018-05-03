@@ -1,48 +1,26 @@
-/*
- * the kernels linker script, setups how the kernel's 
- * memory is laid out 
- */
-
-OUTPUT_FORMAT(elf32-i386)
 ENTRY(start)
+OUTPUT_FORMAT(elf32-i386)
 
-SECTIONS
-{
-        . = 1M;
-        phys = .;
+SECTIONS {
+    /* The kernel will live at 3GB + 1MB in the virtual
+    address space, which will be mapped to 1MB in the
+    physical address space. */
+    . = 0xC0100000;
 
-        .text BLOCK(4K) : ALIGN(4K)
-        {
-                code = .;
-                *(.multiboot)
-                *(.text)
-        }
+    .text : AT(ADDR(.text) - 0xC0000000) {
+        *(.text)
+        *(.rodata*)
+    }
 
-        .rodata BLOCK(4K) : ALIGN(4K)
-        {
-                *(.rodata)
-        }
+    .data ALIGN (0x1000) : AT(ADDR(.data) - 0xC0000000) {
+        *(.data)
+    }
 
-        .data BLOCK(4K) : ALIGN(4K)
-        {
-                data = .;
-                *(.data)
-        }
-        
-        .bss BLOCK(4K) : ALIGN(4K)
-        {
-                bss = .;
-                *(COMMON)
-                *(.bss)
-                *(.stack)
-        }
-
-        end = .;
-
-        /DISCARD/ :
-        {
-                *(.comment)
-                *(.eh_frame)
-                *(.note.gnu.build-id)
-        }
+    .bss : AT(ADDR(.bss) - 0xC0000000) {
+        _sbss = .;
+        *(COMMON)
+        *(.bss)
+        _ebss = .;
+    }
+    end = . ;
 }

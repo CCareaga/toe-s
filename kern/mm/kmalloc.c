@@ -10,13 +10,14 @@ static char *alloc_ptr = (char *) &end;
 
 // this is the allocation helper function, before the kernel heap is initialized
 // we simply move an allocation ptr that starts at the end of the kernel
+// this wont be used after the kernel heap is initialized therefore I use 
+// V2P to for returning the physical address. After that there is no garuantee 
+// V2P will return the physical addr so after that we use 'get_physical'
 static void *kmalloc_helper(uint32_t sz, uint8_t aligned, uint32_t *paddr) {
     void *addr;
 
     if (kheap_initialized) {
-        addr = kheap_alloc(sz);
-
-        return addr;
+        return kheap_alloc(sz);
     }
 
     // this is when there is no kernel heap! 

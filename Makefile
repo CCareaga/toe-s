@@ -26,13 +26,6 @@ KERN_ASMOBJS = $(patsubst %.S,%.o,$(wildcard kern/asm/*.S))
 kernel: ${KERN_ASMOBJS} ${KERN_OBJS}
 	${KCC} -T kern/link.ld ${CFLAGS} -g -nostdlib -o kernel ${KERN_ASMOBJS} ${KERN_OBJS} -lgcc
 	${KOC} --only-keep-debug kernel kernel.sym
-	${KOC} --only-keep-debug debug debug.sym
-	${KOC} --strip-debug kernel
-
-high_kernel: ${KERN_ASMOBJS} ${KERN_OBJS} 
-	${KCC} -T kern/high_link.ld ${CFLAGS} -g -nostdlib -o kernel ${KERN_ASMOBJS} ${KERN_OBJS} -lgcc
-	${KOC} --only-keep-debug kernel kernel.sym
-	${KOC} --only-keep-debug debug debug.sym
 	${KOC} --strip-debug kernel
 
 HEADERS = $(shell find kern/inc/ -type f -name '*.h')
@@ -49,6 +42,7 @@ clean:
 	@-rm -f kern/*/*.o
 	@-rm -f ${KERN_OBJS}
 	@-rm -f kernel.sym
+	@-rm -f kernel
 
 # run the kernel with qemu
 qemu-debug:

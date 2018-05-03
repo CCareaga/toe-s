@@ -24,7 +24,6 @@ page_t *get_page(uint32_t addr, uint8_t create, pg_dir_t *pg_dir) {
         memset(pg_dir->tables[pd_idx], 0, sizeof(pg_tab_t));
 
         pg_dir->phys_tabs[pd_idx] = phys | PDE_P | PDE_W | PDE_U;
-
         kprintf("creating a new page table \n");
 
         ret = &pg_dir->tables[pd_idx]->pages[pt_idx];
@@ -126,11 +125,11 @@ void vmm_init() {
     kheap_pre_init();
 
     uint32_t vaddr;
-
-    // identity map the from 0 all the way to the end of the dummy kernel heap since we 
-    // also need to map in the real heap we map identity map in one page after the 
-    // dummy heap ptr. then when we start mapping the heap there is already a spot
-    // for the heaps page table... sort of confusing
+    
+    // first we map from 0xC0001000 -> kernel end to the same address minus 0xC0000000
+    // P2V and V2P are used to convert between higher half and physical addresses. 
+    // we also map one extra page at the end to hold the page table that will be created 
+    // for the kernel heap in the next for loop (kind of messy...)
     for (vaddr = P2V(0x1000); vaddr <= (uint32_t) kmalloc_get_end() + 0x1000; vaddr += PG_SZ) {
         page = get_page(vaddr, 1, kern_dir);
         map_page(page, 1, 1, V2P(vaddr));
@@ -167,6 +166,7 @@ uint32_t get_physical(uint32_t virt, pg_dir_t* pd) {
 // allocates some space for a stack by mappin' in some pages
 uint32_t allocate_stack(uint32_t start, uint32_t sz, pg_dir_t* pd) {
     page_t *page;
+
     for (int i = start; i < start + sz; i += PG_SZ) {
         page = get_page(i, 1, pd);
         map_page(page, 1, 1, NULL);
