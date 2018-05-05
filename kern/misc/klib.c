@@ -10,6 +10,15 @@ void *memset(void *bufptr, uint8_t value, uint32_t size) {
     return bufptr;
 }
 
+void memcpy(void *srcptr, void *dstptr, uint32_t size) {
+    unsigned char *src = (unsigned char *) srcptr;
+    unsigned char *dst = (unsigned char *) dstptr;
+    uint32_t i;
+
+    for (i = 0; i < size; i++)
+        src[i] = dst[i];
+}
+
 // this code is from http://wiki.osdev.org/Printing_To_Screen#Printing_Integers
 char *itoa(uint32_t val, uint32_t base){
 

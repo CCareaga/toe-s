@@ -52,6 +52,10 @@ typedef struct tregs {
     uint32_t eax, ebx, ecx, edx, esi, edi, esp, ebp, eip, eflags, cr3;
 } tregs_t;
 
+typedef struct ctx {
+    uint32_t esp, edi, esi, ebx, ebp;
+} context_t;
+
 typedef void (*handler_t)(regs_t *);
 
 void idt_init();

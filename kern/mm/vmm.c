@@ -130,7 +130,7 @@ void vmm_init() {
     // P2V and V2P are used to convert between higher half and physical addresses. 
     // we also map one extra page at the end to hold the page table that will be created 
     // for the kernel heap in the next for loop (kind of messy...)
-    for (vaddr = P2V(0x1000); vaddr <= (uint32_t) kmalloc_get_end() + 0x1000; vaddr += PG_SZ) {
+    for (vaddr = P2V(0x0); vaddr <= (uint32_t) kmalloc_get_end() + 0x1000; vaddr += PG_SZ) {
         page = get_page(vaddr, 1, kern_dir);
         map_page(page, 1, 1, V2P(vaddr));
     }
@@ -171,5 +171,7 @@ uint32_t allocate_stack(uint32_t start, uint32_t sz, pg_dir_t* pd) {
         page = get_page(i, 1, pd);
         map_page(page, 1, 1, NULL);
     }
+
+    return start;
 }
 

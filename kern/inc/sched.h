@@ -9,4 +9,7 @@ void tasking_init();
 void schedule();
 void add_task(task_t *tsk);
 
+void kidle();
+void test_task();
+
 #endif

@@ -6,6 +6,7 @@
 #include "vmm.h"
 #include "kmalloc.h"
 #include "timer.h"
+#include "sched.h"
 
 extern void *end;
 extern void higher_half(int offset);
