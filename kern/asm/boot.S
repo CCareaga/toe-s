@@ -19,9 +19,12 @@ boot_pd:
 
 /* .stack resides in .bss */
 .section .bss, "aw", @nobits
+.align 0x1000
 stack_bottom:
-    .skip 32768 /* 32KiB */
+    .skip 16384 /* 16KiB */
 stack_top:
+.global stack_bottom
+.global stack_top
 
 .section .text
 .align 4

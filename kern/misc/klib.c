@@ -16,7 +16,7 @@ void memcpy(void *srcptr, void *dstptr, uint32_t size) {
     uint32_t i;
 
     for (i = 0; i < size; i++)
-        src[i] = dst[i];
+        dst[i] = src[i];
 }
 
 // this code is from http://wiki.osdev.org/Printing_To_Screen#Printing_Integers

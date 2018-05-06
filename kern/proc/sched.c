@@ -37,6 +37,8 @@ task_t *pop_task() {
 
 
 void tasking_init() {
+    relocate_stack((uint32_t *) 0xE0000000);
+
     ready = kmalloc(sizeof(task_list_t));
     ready->head = NULL;
 
@@ -45,20 +47,6 @@ void tasking_init() {
     asm volatile("mov %%esp, %0" : "=r"(init->ctx->esp));
     // init->ctx->eip = init->entry;
     current = init;
-
-    task_t *test = create_task(&test_task);
-    test->mem = kern_dir;
-    // test->ctx->eip = test->entry;
-    // test->ctx->esp = allocate_stack(0xDFF00000, 0x1000, kern_dir);
-    // test->ctx->ebp = 0xDFF00000;
-    char *sp = test->ctx->esp = kmalloc(0x100) + (0x100);
-    test->ctx->ebp = test->ctx->esp;
-
-    sp -= 4;
-    *sp = timer_handler;
-
-    memcpy((char *) sp - sizeof(context_t), ((char *) test->ctx) + 4, sizeof(context_t));
-    add_task(test);
 
     ctx_swtch(init->ctx, init->ctx);
 }

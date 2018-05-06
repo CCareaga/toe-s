@@ -41,6 +41,7 @@ void remove_block(bin_t *bin, block_t *blck);
 bin_t *get_bin(uint32_t sz);
 uint32_t get_bin_index(uint32_t sz);
 block_t *get_first_fit(bin_t *bin, uint32_t sz);
+block_t *get_wilderness();
 void create_foot(block_t *blck);
 footer_t *get_foot(block_t *blck);
 
@@ -69,6 +70,13 @@ void kheap_init() {
     add_block_sorted(get_bin(init->size), init);
 
     kheap_initialized = 1;
+}
+    
+// this function is used to allocate a page from the heap. if we are
+// requesting a page it is probably for a paging structure so we 
+// make sure it is alined as well
+void *kheap_alloc_page() {
+
 }
 
 // allocate a block of a certain size using the kheap
@@ -270,4 +278,10 @@ uint32_t get_bin_index(uint32_t sz) {
     return index;
 }
 
+// we can assume the wilderness footer will always be at the end of the heap
+// so we use it to get the header for the wilderness chunk
+block_t *get_wilderness() {
+    footer_t *wild_foot = (footer_t *) ((char *) kheap->end - sizeof(footer_t));
+    return wild_foot->header;
+}
 

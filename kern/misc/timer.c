@@ -9,7 +9,7 @@
 
 uint32_t ticks = 0;
 
-void timer_handler(regs_t *r) {
+static void timer_handler(regs_t *r) {
     ticks++;
 
     if (ticks % (2 * FREQ) == 0) {

@@ -4,6 +4,9 @@
 #include "klib.h"
 #include "kheap.h"
 
+extern uint32_t stack_top;
+extern uint32_t stack_bottom;
+
 pg_dir_t *kern_dir;
 
 // this function fetches a page addr using the provided virtual 
@@ -118,8 +121,8 @@ void vmm_init() {
     memset(kern_dir, 0, sizeof(pg_dir_t));
     kern_dir->phys = phys;
 
-    page = get_page(0, 1, kern_dir);
-    page->present = 0;
+    // page = get_page(0, 1, kern_dir);
+    // page->present = 0;
     set_frame(0);
 
     kheap_pre_init();
@@ -137,6 +140,12 @@ void vmm_init() {
 
     // map some pages for the kernel heap, these dont have to be identity mapped
     for (vaddr = KHEAP_START; vaddr <= KHEAP_END; vaddr += PG_SZ) {
+        page = get_page(vaddr, 1, kern_dir);
+        map_page(page, 1, 1, NULL);
+    }
+
+    // TEMPORARY: map 4 pages for the relocated stack testing!
+    for (vaddr = 0xE0000000; vaddr <= 0xE0004000; vaddr += PG_SZ) {
         page = get_page(vaddr, 1, kern_dir);
         map_page(page, 1, 1, NULL);
     }
@@ -167,11 +176,44 @@ uint32_t get_physical(uint32_t virt, pg_dir_t* pd) {
 uint32_t allocate_stack(uint32_t start, uint32_t sz, pg_dir_t* pd) {
     page_t *page;
 
-    for (int i = start; i < start + sz; i += PG_SZ) {
+    for (uint32_t i = start; i < start + sz; i += PG_SZ) {
         page = get_page(i, 1, pd);
         map_page(page, 1, 1, NULL);
     }
 
     return start;
+}
+
+// this function is used to relocate the stack, I need to do this in order
+// to ensure that when I fork the new process has its own kernel stack.
+// if we dont do this the new process will have a copy of its parent stack
+void relocate_stack(uint32_t *bottom) {
+    uint32_t stack_sz = (char *) &stack_top - (char *) &stack_bottom;
+    uint32_t offset = (char *) bottom - (uint32_t) &stack_bottom;
+    
+    // copy the old stack to our new area
+    memcpy(&stack_bottom, bottom, stack_sz);
+
+    uint32_t *new_top = (uint32_t *) ((char *) bottom + stack_sz);
+
+    // iterate through the entire stack changing return addresses
+    for (uint32_t *i = bottom; i < new_top; i++) {
+        if (*i < (uint32_t) &stack_top && *i > (uint32_t) &stack_bottom) {
+            *i += offset;
+        }
+    }
+
+    // load the new stack into stack registers
+    uint32_t old_esp, new_esp; 
+    uint32_t old_ebp, new_ebp;  
+
+    asm volatile("mov %%esp, %0" : "=r" (old_esp));
+    asm volatile("mov %%ebp, %0" : "=r" (old_ebp));
+
+    new_esp = old_esp + offset;
+    new_ebp = old_ebp + offset;
+
+    asm volatile("mov %0, %%esp" : : "r" (new_esp));
+    asm volatile("mov %0, %%ebp" : : "r" (new_ebp));
 }
 
