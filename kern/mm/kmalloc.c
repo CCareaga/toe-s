@@ -2,6 +2,7 @@
 #include "kheap.h"
 #include "x86.h"
 #include "pmm.h"
+#include "vmm.h"
 
 extern void *end;
 extern uint8_t kheap_initialized;
@@ -17,18 +18,27 @@ static void *kmalloc_helper(uint32_t sz, uint8_t aligned, uint32_t *paddr) {
     void *addr;
 
     if (kheap_initialized) {
-        return kheap_alloc(sz);
+        if (aligned)
+            addr = kheap_alloc_page();
+        else
+            addr = kheap_alloc(sz);
+
+        if (paddr)
+            *paddr = (uint32_t) get_physical((uint32_t) addr, NULL);
     }
 
     // this is when there is no kernel heap! 
-    if (aligned) 
-        alloc_ptr = (char *) PG_ROUND_UP((uint32_t) alloc_ptr);
+    else {
+        if (aligned) 
+            alloc_ptr = (char *) PG_ROUND_UP((uint32_t) alloc_ptr);
 
-    if (paddr)
-        *paddr = (uint32_t) V2P(alloc_ptr);
+        if (paddr)
+            *paddr = (uint32_t) V2P(alloc_ptr);
 
-    addr = (void *) alloc_ptr;
-    alloc_ptr += sz;
+        addr = (void *) alloc_ptr;
+        alloc_ptr += sz;
+    }
+
     return addr;
 }
 

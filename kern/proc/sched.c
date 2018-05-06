@@ -37,7 +37,8 @@ task_t *pop_task() {
 
 
 void tasking_init() {
-    relocate_stack((uint32_t *) 0xE0000000);
+    // relocate the kernels stack to start below the kernel
+    relocate_stack((uint32_t *) (0xC0000000 - 0x4000), 0x4000);
 
     ready = kmalloc(sizeof(task_list_t));
     ready->head = NULL;

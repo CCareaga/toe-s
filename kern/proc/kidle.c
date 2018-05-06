@@ -1,4 +1,5 @@
 #include "sched.h"
+#include "klib.h"
 
 void kidle() {
     while (1) {

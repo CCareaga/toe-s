@@ -1,6 +1,7 @@
 #include "kheap.h"
 #include "kmalloc.h"
 #include "klib.h"
+#include "vmm.h"
 
 #define BIN_CNT 9
 #define BLCK_OVERHEAD (sizeof(block_t) + sizeof(footer_t))
@@ -55,8 +56,6 @@ void kheap_pre_init() {
 
     for (int i = 0; i < BIN_CNT; i++) 
         kheap->bins[i] = kmalloc(sizeof(bin_t));
-    
-    return;
 }
 
 // this is the second stage of initializaiton, this happens after we map
@@ -76,7 +75,48 @@ void kheap_init() {
 // requesting a page it is probably for a paging structure so we 
 // make sure it is alined as well
 void *kheap_alloc_page() {
+    block_t *ret, *wild, *new_wild; 
+    // first we grab the wilderness block and remove it
+    wild = get_wilderness();
+    uint32_t old_sz = wild->size;
+    remove_block(get_bin(wild->size), wild);
+    
+    uint32_t on_boundary = (((char *) wild + 8) && 0x00000FFF) == 0;
 
+    if (!on_boundary) {
+        uint32_t extra = (PG_SZ) - ((uint32_t) wild & 0x00000FFF);
+
+        // this is the small chunk created when we round up to pg boundary
+        wild->size = extra - BLCK_OVERHEAD - 8;
+        create_foot(wild);
+        add_block_sorted(get_bin(wild->size), wild);
+
+        // this is the block that is given back that is on a pg boundary
+        ret = (block_t *) ((char *) wild + wild->size + BLCK_OVERHEAD);
+        ret->size = PG_SZ;
+        create_foot(ret);
+        ret->hole = 0;
+
+        // this is the new wilderness 
+        new_wild = (block_t *) ((char *) ret + PG_SZ + BLCK_OVERHEAD);
+        new_wild->size = old_sz - wild->size - ret->size - (2 * BLCK_OVERHEAD);
+        create_foot(new_wild);
+        add_block_sorted(get_bin(new_wild->size), new_wild);
+    }
+
+    else {
+        // this case the wilderness block is on a page boundary!
+        new_wild = (block_t *) ((char *) wild + PG_SZ + BLCK_OVERHEAD);
+        create_foot(new_wild);
+        add_block_sorted(get_bin(new_wild->size), wild);
+
+        ret = wild;
+        ret->size = 0x1000;
+        ret->hole = 0;
+        create_foot(ret);
+    }
+
+    return &ret->next; 
 }
 
 // allocate a block of a certain size using the kheap

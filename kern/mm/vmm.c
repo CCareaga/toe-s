@@ -8,6 +8,7 @@ extern uint32_t stack_top;
 extern uint32_t stack_bottom;
 
 pg_dir_t *kern_dir;
+pg_dir_t *current_dir;
 
 // this function fetches a page addr using the provided virtual 
 // address and page directory. if the table that holds the page addr
@@ -56,7 +57,7 @@ void map_page(page_t *pg, uint8_t usr, uint8_t write, uint32_t addr) {
 
         else {
             uint32_t frame = get_frame();
-            kprintf("grabbing the first free phys frame 0x%x \n", frame);
+            // kprintf("grabbing the first free phys frame 0x%x \n", frame);
 
             if (frame != 0xffffffff)
                 pg->addr = frame / PG_SZ;
@@ -94,7 +95,7 @@ void page_fault(regs_t *r) {
     int rw = r->err_code & 0x2;
     int us = r->err_code & 0x4; 
     int reserved = r->err_code & 0x8;
-    int id = r->err_code & 0x10;
+    // int id = r->err_code & 0x10;
 
     kprintf("Page fault! ( ");
     if (present) kprintf("present ");
@@ -152,6 +153,7 @@ void vmm_init() {
 
     add_int_handler(14, &page_fault);
     switch_page_directory(kern_dir->phys);
+    current_dir = kern_dir;
 
     kheap_init();
 }
@@ -159,6 +161,8 @@ void vmm_init() {
 // this function takes a virtual address and returns the physical
 // address it is mapped to, it just looks it up in the page dir
 uint32_t get_physical(uint32_t virt, pg_dir_t* pd) {
+    if (!pd) pd = current_dir;
+
     uint32_t pd_idx = PD_IDX(virt);
     uint32_t pt_idx = PT_IDX(virt);
     uint32_t offset = virt % PG_SZ;
@@ -187,9 +191,12 @@ uint32_t allocate_stack(uint32_t start, uint32_t sz, pg_dir_t* pd) {
 // this function is used to relocate the stack, I need to do this in order
 // to ensure that when I fork the new process has its own kernel stack.
 // if we dont do this the new process will have a copy of its parent stack
-void relocate_stack(uint32_t *bottom) {
+void relocate_stack(uint32_t *bottom, uint32_t size) {
+    
+    allocate_stack((uint32_t) bottom, size, current_dir);
+
     uint32_t stack_sz = (char *) &stack_top - (char *) &stack_bottom;
-    uint32_t offset = (char *) bottom - (uint32_t) &stack_bottom;
+    uint32_t offset = (uint32_t) ((char *) bottom - (uint32_t) &stack_bottom);
     
     // copy the old stack to our new area
     memcpy(&stack_bottom, bottom, stack_sz);
