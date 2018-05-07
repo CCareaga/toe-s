@@ -74,8 +74,9 @@ void kheap_init() {
 // this function is used to allocate a page from the heap. if we are
 // requesting a page it is probably for a paging structure so we 
 // make sure it is alined as well
-void *kheap_alloc_page() {
+void *kheap_alloc_a(uint32_t size) {
     block_t *ret, *wild, *new_wild; 
+
     // first we grab the wilderness block and remove it
     wild = get_wilderness();
     uint32_t old_sz = wild->size;
@@ -93,12 +94,12 @@ void *kheap_alloc_page() {
 
         // this is the block that is given back that is on a pg boundary
         ret = (block_t *) ((char *) wild + wild->size + BLCK_OVERHEAD);
-        ret->size = PG_SZ;
+        ret->size = size;
         create_foot(ret);
         ret->hole = 0;
 
         // this is the new wilderness 
-        new_wild = (block_t *) ((char *) ret + PG_SZ + BLCK_OVERHEAD);
+        new_wild = (block_t *) ((char *) ret + size + BLCK_OVERHEAD);
         new_wild->size = old_sz - wild->size - ret->size - (2 * BLCK_OVERHEAD);
         create_foot(new_wild);
         add_block_sorted(get_bin(new_wild->size), new_wild);
@@ -106,12 +107,12 @@ void *kheap_alloc_page() {
 
     else {
         // this case the wilderness block is on a page boundary!
-        new_wild = (block_t *) ((char *) wild + PG_SZ + BLCK_OVERHEAD);
+        new_wild = (block_t *) ((char *) wild + size + BLCK_OVERHEAD);
         create_foot(new_wild);
         add_block_sorted(get_bin(new_wild->size), wild);
 
         ret = wild;
-        ret->size = 0x1000;
+        ret->size = size;
         ret->hole = 0;
         create_foot(ret);
     }

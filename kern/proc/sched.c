@@ -44,7 +44,8 @@ void tasking_init() {
     ready->head = NULL;
 
     task_t *init = create_task(&kidle);
-    init->mem = kern_dir;
+    init->mem = copy_pg_dir(kern_dir);
+
     asm volatile("mov %%esp, %0" : "=r"(init->ctx->esp));
     // init->ctx->eip = init->entry;
     current = init;

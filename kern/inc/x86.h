@@ -13,6 +13,8 @@
 #define PDE_W           0x2
 #define PDE_U           0x4
 
+#define IDX2PG(d,t)  (uint32_t *) ((d << 22) | (t << 12))
+
 #define HIGHER_HALF         0x1
 #define HIGHER_HALF_START   0xC0000000
 

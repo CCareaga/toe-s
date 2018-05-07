@@ -18,8 +18,8 @@ static void *kmalloc_helper(uint32_t sz, uint8_t aligned, uint32_t *paddr) {
     void *addr;
 
     if (kheap_initialized) {
-        if (aligned)
-            addr = kheap_alloc_page();
+        if (aligned) 
+            addr = kheap_alloc_a(sz); 
         else
             addr = kheap_alloc(sz);
 

@@ -224,3 +224,60 @@ void relocate_stack(uint32_t *bottom, uint32_t size) {
     asm volatile("mov %0, %%ebp" : : "r" (new_ebp));
 }
 
+void copy_page(pg_dir_t *dir, uint32_t *virt, uint32_t *buffer) {
+    // switch to the new page directory
+    switch_page_directory(dir->phys);
+    
+    // get the page and create a new table if need be
+    // then get it a physical address, then copy the data
+    page_t *page = get_page((uint32_t) virt, 1, dir);
+    map_page(page, 1, 1, NULL);
+    memcpy(buffer, virt, PG_SZ);
+
+    // switch back to the new one
+    switch_page_directory(current_dir->phys);
+}
+
+pg_dir_t *copy_pg_dir(pg_dir_t *dir) {
+
+    uint32_t phys;
+    pg_dir_t *new = kmalloc_ap(sizeof(pg_dir_t), &phys);
+    memset(new, 0, sizeof(pg_dir_t));
+    new->phys = phys;
+
+    uint32_t *copy_buf = kmalloc(PG_SZ);
+
+    // this will map the kernel, this part of the new directory
+    // is mapped to the same physical addresses as the kernel, this is
+    // so that every page directory has the kernel mapped in
+    for (uint32_t i = 768; i < 1023; i++) {
+        pg_tab_t *table = dir->tables[i];
+        
+        if (table) {
+            new->tables[i] = table;
+            memcpy(dir->phys_tabs, new->phys_tabs, sizeof(uintptr_t) * 1024);
+        }
+    }
+    
+    // now we copy anything from 0x0 up to the bottom of the kernel
+    // we have to go through each page and copy the contents to a new
+    // physical frame so that the new page dir has a copy...
+    for (uint32_t i = 0; i < 768; i++) {
+        pg_tab_t *table = dir->tables[i];
+        
+        if (table) {
+            for (uint32_t p = 0; p < 1023; p++) {
+                if (table->pages[p].addr) { 
+                    // this page is actually mapped in so we copy it to a buffer
+                    // in the kernel (already mapped) so we can copy to the new dir
+                    uint32_t *pg_addr = IDX2PG(i, p);
+                    memcpy(pg_addr, copy_buf, PG_SZ);
+                    copy_page(new, pg_addr, copy_buf);
+                }
+            }
+        }
+    }
+
+    return new;
+}
+

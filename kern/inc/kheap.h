@@ -13,7 +13,7 @@ void kheap_pre_init();
 void kheap_init();
     
 void *kheap_alloc(uint32_t sz);
-void *kheap_alloc_page();
+void *kheap_alloc_a(uint32_t sz);
 void kheap_free(void  *addr);
 
 #endif
