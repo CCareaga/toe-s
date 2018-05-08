@@ -64,6 +64,6 @@ uint32_t set_frame(uint32_t addr) {
 }
 
 void free_frame(uint32_t addr) {
-    uint32_t idx = addr / PG_SZ;
-    bs_clr(frames, idx);
+    // uint32_t idx = addr / PG_SZ;
+    bs_clr(frames, addr);
 }

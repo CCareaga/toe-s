@@ -79,8 +79,9 @@ void unmap_page(page_t *pg) {
 }
 
 // function to switch to the provided directory
-void switch_page_directory(uintptr_t dir) {
-    asm volatile("mov %0, %%cr3":: "r"(dir));
+void switch_page_directory(pg_dir_t *dir) {
+    current_dir = dir;
+    asm volatile("mov %0, %%cr3":: "r"(dir->phys));
     uint32_t cr0;
     asm volatile("mov %%cr0, %0": "=r"(cr0));
     cr0 |= 0x80000000; // Enable paging!
@@ -145,14 +146,8 @@ void vmm_init() {
         map_page(page, 1, 1, NULL);
     }
 
-    // TEMPORARY: map 4 pages for the relocated stack testing!
-    for (vaddr = 0xE0000000; vaddr <= 0xE0004000; vaddr += PG_SZ) {
-        page = get_page(vaddr, 1, kern_dir);
-        map_page(page, 1, 1, NULL);
-    }
-
     add_int_handler(14, &page_fault);
-    switch_page_directory(kern_dir->phys);
+    switch_page_directory(kern_dir);
     current_dir = kern_dir;
 
     kheap_init();
@@ -168,7 +163,7 @@ uint32_t get_physical(uint32_t virt, pg_dir_t* pd) {
     uint32_t offset = virt % PG_SZ;
     uint32_t ret = 0;
 
-    if (kern_dir->tables[pd_idx]) {
+    if (pd->tables[pd_idx]) {
         page_t *page = &pd->tables[pd_idx]->pages[pt_idx];
         ret = ((uint32_t) page->addr * PG_SZ) + offset;
     }
@@ -193,8 +188,6 @@ uint32_t allocate_stack(uint32_t start, uint32_t sz, pg_dir_t* pd) {
 // if we dont do this the new process will have a copy of its parent stack
 void relocate_stack(uint32_t *bottom, uint32_t size) {
     
-    allocate_stack((uint32_t) bottom, size, current_dir);
-
     uint32_t stack_sz = (char *) &stack_top - (char *) &stack_bottom;
     uint32_t offset = (uint32_t) ((char *) bottom - (uint32_t) &stack_bottom);
     
@@ -209,7 +202,7 @@ void relocate_stack(uint32_t *bottom, uint32_t size) {
             *i += offset;
         }
     }
-
+    
     // load the new stack into stack registers
     uint32_t old_esp, new_esp; 
     uint32_t old_ebp, new_ebp;  
@@ -224,20 +217,6 @@ void relocate_stack(uint32_t *bottom, uint32_t size) {
     asm volatile("mov %0, %%ebp" : : "r" (new_ebp));
 }
 
-void copy_page(pg_dir_t *dir, uint32_t *virt, uint32_t *buffer) {
-    // switch to the new page directory
-    switch_page_directory(dir->phys);
-    
-    // get the page and create a new table if need be
-    // then get it a physical address, then copy the data
-    page_t *page = get_page((uint32_t) virt, 1, dir);
-    map_page(page, 1, 1, NULL);
-    memcpy(buffer, virt, PG_SZ);
-
-    // switch back to the new one
-    switch_page_directory(current_dir->phys);
-}
-
 pg_dir_t *copy_pg_dir(pg_dir_t *dir) {
 
     uint32_t phys;
@@ -245,36 +224,44 @@ pg_dir_t *copy_pg_dir(pg_dir_t *dir) {
     memset(new, 0, sizeof(pg_dir_t));
     new->phys = phys;
 
-    uint32_t *copy_buf = kmalloc(PG_SZ);
-
-    // this will map the kernel, this part of the new directory
-    // is mapped to the same physical addresses as the kernel, this is
-    // so that every page directory has the kernel mapped in
-    for (uint32_t i = 768; i < 1023; i++) {
-        pg_tab_t *table = dir->tables[i];
-        
-        if (table) {
-            new->tables[i] = table;
-            memcpy(dir->phys_tabs, new->phys_tabs, sizeof(uintptr_t) * 1024);
-        }
-    }
-    
     // now we copy anything from 0x0 up to the bottom of the kernel
     // we have to go through each page and copy the contents to a new
     // physical frame so that the new page dir has a copy...
+
+    page_t *page;
     for (uint32_t i = 0; i < 768; i++) {
         pg_tab_t *table = dir->tables[i];
         
         if (table) {
-            for (uint32_t p = 0; p < 1023; p++) {
+            for (uint32_t p = 0; p < 1024; p++) {
                 if (table->pages[p].addr) { 
-                    // this page is actually mapped in so we copy it to a buffer
-                    // in the kernel (already mapped) so we can copy to the new dir
+
                     uint32_t *pg_addr = IDX2PG(i, p);
-                    memcpy(pg_addr, copy_buf, PG_SZ);
-                    copy_page(new, pg_addr, copy_buf);
+                    uint32_t frame = get_frame();
+
+                    page = get_page((uint32_t) 0xE0000000, 1, kern_dir);
+                    map_page(page, 1, 1, frame);
+                    switch_page_directory(kern_dir);
+
+                    memcpy(pg_addr, (char *) 0xE0000000, PG_SZ);
+                    unmap_page(page);
+
+
+                    page = get_page((uint32_t) pg_addr, 1, new);
+                    map_page(page, 1, 1, frame);
+
+                    switch_page_directory(kern_dir);
                 }
             }
+        }
+    }
+
+    for (uint32_t i = 768; i < 1024; i++) {
+        pg_tab_t *table = kern_dir->tables[i];
+        
+        if (table) {
+            new->tables[i] = table;
+            new->phys_tabs[i] = kern_dir->phys_tabs[i];
         }
     }
 

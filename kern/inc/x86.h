@@ -46,7 +46,7 @@ typedef struct page_tab {
 
 typedef struct page_dir { 
     uintptr_t   phys_tabs[1024];    // physical addresses of the page tables for the cpu
-    pg_tab_t *tables[1024];         // the possibly virtual addresses of the tables
+    pg_tab_t   *tables[1024];       // the possibly virtual addresses of the tables
     uintptr_t   phys;               // physical address of this page directory itself
 } pg_dir_t;
 

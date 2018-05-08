@@ -37,14 +37,23 @@ task_t *pop_task() {
 
 
 void tasking_init() {
-    // relocate the kernels stack to start below the kernel
-    relocate_stack((uint32_t *) (0xC0000000 - 0x4000), 0x4000);
+
+    // here we allocate a stack outside of the kernel addr range
+    // this just maps in pages that will get copied to other pg dirs
+    uint32_t bottom = (0xC0000000 - 0x4000);
+    allocate_stack((uint32_t)bottom, 0x4000, kern_dir);
 
     ready = kmalloc(sizeof(task_list_t));
     ready->head = NULL;
 
     task_t *init = create_task(&kidle);
+
+    // give this process a new page directory with the kernel mapped in
     init->mem = copy_pg_dir(kern_dir);
+    switch_page_directory(init->mem);
+
+    // move that stack to the space we allocated earlier.. just for testing
+    relocate_stack((uint32_t *) bottom, 0x4000);
 
     asm volatile("mov %%esp, %0" : "=r"(init->ctx->esp));
     // init->ctx->eip = init->entry;

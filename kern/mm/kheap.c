@@ -64,6 +64,8 @@ void kheap_pre_init() {
 void kheap_init() {
     block_t *init = (block_t *) KHEAP_START;
     init->size = KHEAP_END - KHEAP_START - BLCK_OVERHEAD;
+    init->next = NULL;
+    init->prev = NULL;
 
     create_foot(init);
     add_block_sorted(get_bin(init->size), init);
@@ -80,6 +82,7 @@ void *kheap_alloc_a(uint32_t size) {
     // first we grab the wilderness block and remove it
     wild = get_wilderness();
     uint32_t old_sz = wild->size;
+    wild->hole = 1;
     remove_block(get_bin(wild->size), wild);
     
     uint32_t on_boundary = (((char *) wild + 8) && 0x00000FFF) == 0;
@@ -90,6 +93,7 @@ void *kheap_alloc_a(uint32_t size) {
         // this is the small chunk created when we round up to pg boundary
         wild->size = extra - BLCK_OVERHEAD - 8;
         create_foot(wild);
+        wild->hole = 1;
         add_block_sorted(get_bin(wild->size), wild);
 
         // this is the block that is given back that is on a pg boundary
@@ -101,6 +105,7 @@ void *kheap_alloc_a(uint32_t size) {
         // this is the new wilderness 
         new_wild = (block_t *) ((char *) ret + size + BLCK_OVERHEAD);
         new_wild->size = old_sz - wild->size - ret->size - (2 * BLCK_OVERHEAD);
+        new_wild->hole = 1;
         create_foot(new_wild);
         add_block_sorted(get_bin(new_wild->size), new_wild);
     }
@@ -108,15 +113,17 @@ void *kheap_alloc_a(uint32_t size) {
     else {
         // this case the wilderness block is on a page boundary!
         new_wild = (block_t *) ((char *) wild + size + BLCK_OVERHEAD);
+        new_wild->hole = 1;
         create_foot(new_wild);
-        add_block_sorted(get_bin(new_wild->size), wild);
+        add_block_sorted(get_bin(new_wild->size), new_wild);
 
         ret = wild;
         ret->size = size;
         ret->hole = 0;
         create_foot(ret);
     }
-
+    
+    memset(&ret->next, 0, (ret->size + 8));
     return &ret->next; 
 }
 
@@ -151,10 +158,7 @@ void *kheap_alloc(uint32_t sz) {
     found->hole = 0;
     remove_block(tmp, found);
 
-    
-    found->prev = NULL;
-    found->next = NULL;
-
+    memset(&found->next, 0, (found->size + 8));
     return &found->next;
 }
 
@@ -194,7 +198,6 @@ void kheap_free(void  *addr) {
         footer_t *old_foot = get_foot(next);
         old_foot->header = 0;
         next->size = 0;
-        next->size = 0;
 
         footer_t *new_foot = get_foot(blck);
         new_foot->header = blck;
@@ -230,7 +233,7 @@ void add_block_sorted(bin_t *bin, block_t *blck) {
     block_t *temp = bin->head;
     block_t *prev = NULL;
 
-    while (temp &&temp->size <= blck->size) {
+    while (temp && temp->size <= blck->size) {
         prev = temp;
         temp = temp->next;
     }
@@ -261,20 +264,25 @@ void remove_block(bin_t *bin, block_t *blck) {
     if (!bin->head) return;
     if (bin->head == blck) {
         bin->head = bin->head->next;
+
+        blck->next = NULL;
+        blck->prev = NULL;
         return;
     }
 
     block_t *temp = bin->head->next;
     while (temp) {
-        if (temp == blck) {
-            if (temp->next) {
+        if (temp == blck) { // we found it
+            if (temp->next == NULL) { // last item in bin
+                temp->prev->next = NULL;
+            }
+            else { // middle item, relink 
                 temp->prev->next = temp->next;
                 temp->next->prev = temp->prev;
             }
-            else {
-                temp->prev->next = NULL;
-            }
-
+            
+            blck->next = NULL;
+            blck->prev = NULL;
             return;
         }
 
