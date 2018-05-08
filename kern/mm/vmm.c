@@ -239,18 +239,17 @@ pg_dir_t *copy_pg_dir(pg_dir_t *dir) {
                     uint32_t *pg_addr = IDX2PG(i, p);
                     uint32_t frame = get_frame();
 
-                    page = get_page((uint32_t) 0xE0000000, 1, kern_dir);
+                    page = get_page((uint32_t) 0xE0000000, 1, current_dir);
                     map_page(page, 1, 1, frame);
-                    switch_page_directory(kern_dir);
+                    switch_page_directory(current_dir);
 
                     memcpy(pg_addr, (char *) 0xE0000000, PG_SZ);
                     unmap_page(page);
 
-
                     page = get_page((uint32_t) pg_addr, 1, new);
                     map_page(page, 1, 1, frame);
 
-                    switch_page_directory(kern_dir);
+                    switch_page_directory(current_dir);
                 }
             }
         }

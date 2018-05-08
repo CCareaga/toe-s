@@ -12,7 +12,7 @@ uint32_t ticks = 0;
 static void timer_handler(regs_t *r) {
     ticks++;
 
-    if (ticks % (2 * FREQ) == 0) {
+    if (ticks % (FREQ) == 0) {
         ticks = 0;
         schedule();
     }

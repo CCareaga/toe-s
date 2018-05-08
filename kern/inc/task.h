@@ -12,6 +12,8 @@ typedef struct task {
     context_t   *ctx;
     pg_dir_t    *mem;
 
+    struct task *parent;
+
     struct task *next;
     struct task *prev;
 } task_t;

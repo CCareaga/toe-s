@@ -47,6 +47,30 @@ int kmain(multiboot_t *mboot, uint32_t mboot_mag, uintptr_t esp) {
     timer_init();
     tasking_init();
 
+    uint32_t pid = fork();
+    uint32_t i = 0;
+
+
+    if (pid == 0) {
+        while (1) {
+            if (i == 10000000) {
+                kprintf("child");
+                i = 0;
+            }
+            i++;
+        }
+    }
+    else {
+        while (1) {
+            if (i == 10000000) {
+                kprintf("parent");
+                i = 0;
+            }
+            i++;
+        }
+    }
+
+
     for (;;) {}
 
     return 0;

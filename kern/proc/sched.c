@@ -30,16 +30,20 @@ void add_task(task_t *tsk) {
 
 task_t *pop_task() {
     if (!ready->head) return NULL;
+
     task_t *ret = ready->head;
     ready->head = ready->head->next;
+
+    ret->next = NULL;
+    ret->prev = NULL;
     return ret;
 }
 
-
 void tasking_init() {
-
-    // here we allocate a stack outside of the kernel addr range
-    // this just maps in pages that will get copied to other pg dirs
+    
+    // here we create a new task that is basically the idle task
+    // we allocate a stack for it and then copy the page directory
+    // then we move the stack pointers
     uint32_t bottom = (0xC0000000 - 0x4000);
     allocate_stack((uint32_t)bottom, 0x4000, kern_dir);
 
@@ -48,18 +52,16 @@ void tasking_init() {
 
     task_t *init = create_task(&kidle);
 
-    // give this process a new page directory with the kernel mapped in
     init->mem = copy_pg_dir(kern_dir);
     switch_page_directory(init->mem);
 
-    // move that stack to the space we allocated earlier.. just for testing
     relocate_stack((uint32_t *) bottom, 0x4000);
 
-    asm volatile("mov %%esp, %0" : "=r"(init->ctx->esp));
-    // init->ctx->eip = init->entry;
-    current = init;
+    asm volatile("mov %%esp, %0" : "=r" (init->ctx->esp));
+    asm volatile("mov %%ebp, %0" : "=r" (init->ctx->ebp));
 
-    ctx_swtch(init->ctx, init->ctx);
+    current = init;
+    add_task(init);
 }
 
 void schedule() {
@@ -72,13 +74,36 @@ void schedule() {
     task_t *new = pop_task();
     task_t *old = current;
 
-    add_task(current);
+    add_task(old);
     current = new;
      
     ctx_swtch(old->ctx, new->ctx);
+    switch_page_directory(new->mem);
 }
 
 void switch_to(task_t *tsk) {   
 
 }
 
+// for now what fork does is create a new task that has
+// a copy of the current tasks page directory, it is added
+// to the task list to be scheduled
+uint32_t fork() {
+
+    task_t *child = create_task(NULL);
+    child->parent = current;
+    child->mem = copy_pg_dir(current->mem);
+    asm volatile("mov %%esp, %0" : "=r" (child->ctx->esp));
+    asm volatile("mov %%ebp, %0" : "=r" (child->ctx->ebp));
+    
+    // after this point either the parent or child
+    // can be the current task
+    add_task(child);
+
+    if (current->tid == child->tid) {
+        return 0;
+    }
+    else {
+        return child->tid;
+    }
+}
